@@ -167,7 +167,10 @@ public class ClusteredCDIEventBusImpl implements CDIEventListener, ClusteredCDIE
                 public void run() {
                     ClassLoader oldCL = Utility.getClassLoader();
                     try {
-                        Utility.setContextClassLoader(ctxUtil.getInvocationClassLoader());
+                        ClassLoader invocationClassLoader = ctxUtil.getInvocationClassLoader();
+                        if (invocationClassLoader != null) { // null in case of an event from server such as CDI notifier
+                            Utility.setContextClassLoader(invocationClassLoader);
+                        }
                         
                         // create the set of qualifiers for the event
                         // first add Inbound qualifier with the correct properties                                                
@@ -257,5 +260,8 @@ public class ClusteredCDIEventBusImpl implements CDIEventListener, ClusteredCDIE
     private String[] deserializeToArray(String serializedItems) {
         return serializedItems.split(ITEM_SEPARATOR);
     }
+<<<<<<< HEAD
 
+=======
+>>>>>>> 0105af311d... Merge pull request #2856 from Pandrex247/PAYARA-2824-Payara4
 }
