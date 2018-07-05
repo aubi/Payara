@@ -53,7 +53,7 @@
 
     <groupId>fish.payara</groupId>
     <artifactId>payara-nucleus-parent</artifactId>
-    <version>4.1.2.181.3</version>
+    <version>4.1.2.181.4</version>
     <packaging>pom</packaging>
     <name>Payara Nucleus Parent Project</name>
 
@@ -61,7 +61,7 @@
         <connection>scm:git:git@github.com:payara/payara.git</connection>
         <url>scm:git:git@github.com:payara/payara.git</url>
         <developerConnection>scm:git:git@github.com:payara/payara.git</developerConnection>
-        <tag>payara-server-4.1.2.181.3</tag>
+        <tag>payara-server-4.1.2.181.4</tag>
     </scm>
     
     <issueManagement>
@@ -653,6 +653,14 @@
                 <configuration>
                     <detectOfflineLinks>false</detectOfflineLinks>
                     <skip>${javadoc.skip}</skip>
+                </configuration>
+            </plugin>
+	    <plugin>
+                <groupId>org.glassfish.build</groupId>
+                <artifactId>command-security-maven-plugin</artifactId>
+                <version>${command-security-plugin.version}</version>
+                <configuration>
+                    <isFailureFatal>${command.security.maven.plugin.isFailureFatal}</isFailureFatal>
                 </configuration>
             </plugin>
         </plugins>
