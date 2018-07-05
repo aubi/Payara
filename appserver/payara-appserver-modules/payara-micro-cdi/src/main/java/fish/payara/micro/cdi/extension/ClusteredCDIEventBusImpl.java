@@ -260,8 +260,5 @@ public class ClusteredCDIEventBusImpl implements CDIEventListener, ClusteredCDIE
     private String[] deserializeToArray(String serializedItems) {
         return serializedItems.split(ITEM_SEPARATOR);
     }
-<<<<<<< HEAD
-
-=======
->>>>>>> 0105af311d... Merge pull request #2856 from Pandrex247/PAYARA-2824-Payara4
+    
 }

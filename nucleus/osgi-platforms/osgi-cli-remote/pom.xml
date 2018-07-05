@@ -45,7 +45,7 @@
     <parent>
         <groupId>org.glassfish.main.osgi-platforms</groupId>
         <artifactId>osgi-platforms</artifactId>
-        <version>4.1.2.181.3</version>
+        <version>4.1.2.181.4</version>
     </parent>
 
     <groupId>org.glassfish.main.osgi-platforms</groupId>
@@ -53,7 +53,7 @@
     <packaging>glassfish-jar</packaging>
 
     <name>Admin CLI bridge command to the OSGi Shell</name>
-    <description>${project.name}}</description>
+    <description>${project.name}</description>
     <developers>
         <developer>
             <name>Ancoron Luciferis</name>
