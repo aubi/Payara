@@ -249,7 +249,9 @@ public class JBatchJDBCPersistenceManager implements
 			schema = dbmd.getUserName();
 			if (dbmd.getDatabaseProductName().toLowerCase().contains("mysql")) {
 				schema = "test";
-			}
+			} else if (dbmd.getDatabaseProductName().toLowerCase().contains("postgres")) {
+                                schema = "public";
+                         }
 
 		} catch (SQLException e) {
 			logger.severe(e.getLocalizedMessage());
