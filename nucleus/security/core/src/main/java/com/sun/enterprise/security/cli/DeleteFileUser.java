@@ -37,6 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright [2019] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.security.cli;
 
@@ -87,8 +88,8 @@ import org.jvnet.hk2.config.types.Property;
 @Service(name="delete-file-user")
 @PerLookup
 @I18n("delete.file.user")
-@ExecuteOn({RuntimeType.ALL})
-@TargetType({CommandTarget.DAS,CommandTarget.STANDALONE_INSTANCE,CommandTarget.CLUSTER, CommandTarget.CONFIG})
+@ExecuteOn({ RuntimeType.DAS, RuntimeType.INSTANCE })
+@TargetType({ CommandTarget.DAS, CommandTarget.STANDALONE_INSTANCE, CommandTarget.CLUSTER, CommandTarget.CONFIG })
 @RestEndpoints({
     @RestEndpoint(configBean=AuthRealm.class,
         opType=RestEndpoint.OpType.DELETE, 

@@ -40,7 +40,7 @@
     holder.
 
 -->
-<!-- Portions Copyright [2016-2018] [Payara Foundation and/or its affiliates] -->
+<!-- Portions Copyright [2016-2019] [Payara Foundation and/or its affiliates] -->
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
@@ -374,22 +374,7 @@
             <type>zip</type>
             <optional>true</optional>
         </dependency>
-        <!-- Yubikey Authentication -->
-        <dependency>
-            <groupId>org.glassfish.main.packager</groupId>
-            <artifactId>yubikey-authentication</artifactId>
-            <version>${project.version}</version>
-            <type>zip</type>
-        </dependency>
-        <!-- roles api -->
-        <dependency>
-            <groupId>org.glassfish.main.packager</groupId>
-            <artifactId>cdi-auth-roles</artifactId>
-            <version>${project.version}</version>
-            <type>zip</type>
-            <optional>true</optional>
-        </dependency>
-        <!-- Micro Service -->
+       <!-- Micro Service -->
         <dependency>
             <groupId>org.glassfish.main.packager</groupId>
             <artifactId>payara-micro</artifactId>
