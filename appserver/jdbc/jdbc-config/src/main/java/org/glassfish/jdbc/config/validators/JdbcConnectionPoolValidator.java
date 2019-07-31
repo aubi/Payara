@@ -77,14 +77,12 @@ public class JdbcConnectionPoolValidator
 
         String variableToFind = variableReference[1];
 
-        switch (variableReference[0]) {
-            case "ENV":
-                //Check environment variables for requested value
-                String varValue = System.getenv(variableToFind);
-                if (varValue != null && !varValue.isEmpty()) {
-                    return varValue;
-                }
-                break;
+        if (variableReference[0].equals("ENV")) {
+            //Check environment variables for requested value
+            String varValue = System.getenv(variableToFind);
+            if (varValue != null && !varValue.isEmpty()) {
+                return varValue;
+            }
         }
         
         //If this point is reached, the variable value could not be found
@@ -95,8 +93,8 @@ public class JdbcConnectionPoolValidator
     public boolean isValid(final ResourcePool pool,
         final ConstraintValidatorContext constraintValidatorContext) {
 
-        if(poolFaults == ConnectionPoolErrorMessages.MAX_STEADY_INVALID) {
-            if(pool instanceof JdbcConnectionPool) {
+        if (poolFaults == ConnectionPoolErrorMessages.MAX_STEADY_INVALID) {
+            if (pool instanceof JdbcConnectionPool) {
                 
                 JdbcConnectionPool jdbcPool = (JdbcConnectionPool) pool;
                 String maxPoolSize = jdbcPool.getMaxPoolSize();
@@ -109,14 +107,14 @@ public class JdbcConnectionPoolValidator
                     steadyPoolSize = Constants.DEFAULT_STEADY_POOL_SIZE;
                 } else if(steadyPoolSize.startsWith("$")) {
                     steadyPoolSize = getParsedVariable(steadyPoolSize.substring(2, steadyPoolSize.length() - 1));
-                    if(steadyPoolSize == null) return false;
+                    if (steadyPoolSize == null) return false;
                 }
                 
                 if (maxPoolSize == null) {
                     maxPoolSize = Constants.DEFAULT_MAX_POOL_SIZE;
                 } else if(maxPoolSize.startsWith("$")) {
                     maxPoolSize = getParsedVariable(maxPoolSize.substring(2, maxPoolSize.length() - 1));
-                    if(maxPoolSize == null) return false;
+                    if (maxPoolSize == null) return false;
                 }
                 
                 try {
