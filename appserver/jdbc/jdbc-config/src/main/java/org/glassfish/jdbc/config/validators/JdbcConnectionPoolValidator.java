@@ -47,8 +47,6 @@ import org.glassfish.jdbc.config.JdbcConnectionPool;
 import org.glassfish.connectors.config.validators.ConnectionPoolErrorMessages;
 import javax.validation.ConstraintValidator;
 import javax.validation.ConstraintValidatorContext;
-import org.eclipse.microprofile.config.Config;
-import org.eclipse.microprofile.config.ConfigProvider;
 
 /**
  * Implementation for Connection Pool validation.
@@ -83,14 +81,6 @@ public class JdbcConnectionPoolValidator
             case "ENV":
                 //Check environment variables for requested value
                 String varValue = System.getenv(variableToFind);
-                if (varValue != null && !varValue.isEmpty()) {
-                    return varValue;
-                }
-                break;
-            case "MPCONFIG":
-                //Check microprofile config for requested value
-                Config config = ConfigProvider.getConfig();
-                varValue = config.getValue(variableToFind, String.class);
                 if (varValue != null && !varValue.isEmpty()) {
                     return varValue;
                 }
