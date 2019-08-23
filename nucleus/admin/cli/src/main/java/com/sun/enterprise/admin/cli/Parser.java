@@ -47,7 +47,7 @@ import org.glassfish.api.admin.*;
 import org.glassfish.api.admin.CommandModel.ParamModel;
 import com.sun.enterprise.admin.util.CommandModelData.ParamModelData;
 import com.sun.enterprise.universal.i18n.LocalStringsImpl;
-
+import com.sun.enterprise.util.StringUtils;
 
 /**
  * The <code>Parser</code> object is used to parse the
@@ -117,7 +117,7 @@ public class Parser {
 
             // is it an operand or option value?
             if (!arg.startsWith("-") || arg.length() <= 1) {
-                operands.add(arg);
+                operands.add(StringUtils.trimQuotes(arg));
                 if (ignoreUnknown) {
                     continue;
                 }
@@ -325,7 +325,7 @@ public class Parser {
             throw new NullPointerException("null option name");
         }
         if (value != null) {
-            value = value.trim();
+            value = StringUtils.trimQuotes(value.trim());
         }
 
         String name = opt.getName();

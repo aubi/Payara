@@ -56,7 +56,7 @@
         <url>scm:git:git@github.com:payara/payara.git</url>
         <developerConnection>scm:git:git@github.com:payara/payara.git</developerConnection>
         <tag>payara-blue-4.1.2.191.5</tag>
-    </scm>
+   </scm>
 
     <distributionManagement>
         <snapshotRepository>

@@ -38,7 +38,7 @@
  * holder.
  */
 
-// Portions Copyright [2016-2017] [Payara Foundation]
+// Portions Copyright [2016-2019] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.web;
 
@@ -65,11 +65,30 @@ import com.sun.enterprise.web.logger.FileLoggerHandlerFactory;
 import com.sun.enterprise.web.pluggable.WebContainerFeatureFactory;
 import com.sun.enterprise.web.session.SessionCookieConfig;
 import com.sun.web.security.RealmAdapter;
-import java.io.File;
-import java.io.IOException;
 import java.security.AccessController;
 import java.security.PrivilegedAction;
-import java.util.*;
+import static com.sun.enterprise.web.Constants.DEFAULT_WEB_MODULE_NAME;
+import static org.glassfish.api.web.Constants.ADMIN_VS;
+import static org.glassfish.web.LogFacade.IGNORE_INVALID_REALM;
+import static org.glassfish.web.LogFacade.INVALID_AUTH_REALM;
+import static org.glassfish.web.LogFacade.INVALID_LISTENER_VIRTUAL_SERVER;
+import static org.glassfish.web.LogFacade.NOT_A_VALVE;
+import static org.glassfish.web.LogFacade.UNABLE_RECONFIGURE_ACCESS_LOG;
+import static org.glassfish.web.LogFacade.UNABLE_TO_LOAD_EXTENSION_SEVERE;
+import static org.glassfish.web.LogFacade.VS_ADDED_CONTEXT;
+import static org.glassfish.web.LogFacade.VS_DEFAULT_WEB_MODULE;
+import static org.glassfish.web.LogFacade.VS_DEFAULT_WEB_MODULE_DISABLED;
+import static org.glassfish.web.LogFacade.VS_DEFAULT_WEB_MODULE_NOT_FOUND;
+
+import java.io.File;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Properties;
+import java.util.ResourceBundle;
 import java.util.logging.Handler;
 import java.util.logging.Level;
 import java.util.logging.LogManager;
@@ -123,7 +142,6 @@ import org.glassfish.grizzly.http.HttpRequestPacket;
 import org.glassfish.grizzly.http.HttpResponsePacket;
 import org.glassfish.grizzly.http.util.HttpStatus;
 import org.glassfish.hk2.api.ServiceLocator;
-import org.glassfish.hk2.api.ServiceLocatorFactory;
 import org.glassfish.internal.api.ClassLoaderHierarchy;
 import org.glassfish.internal.api.Globals;
 import org.glassfish.internal.api.ServerContext;
@@ -645,7 +663,10 @@ public class VirtualServer extends StandardHost
                 webArchivist.getDefaultWebXmlBundleDescriptor();
             wmInfo = new WebModuleConfig();
             wbd.setModuleID(Constants.DEFAULT_WEB_MODULE_NAME);
+            wbd.getModuleDescriptor().setArchiveUri(Constants.DEFAULT_WEB_MODULE_NAME);
             wbd.setContextRoot("");
+            SecurityService securityService = Globals.get(SecurityService.class);
+            wbd.getLoginConfiguration().setRealmName(securityService.getDefaultRealm());
             wmInfo.setLocation(new File(docroot));
             wmInfo.setDescriptor(wbd);
             wmInfo.setParentLoader(

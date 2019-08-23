@@ -39,11 +39,13 @@
  */
 package fish.payara.microprofile.openapi.impl.admin;
 
+import com.sun.enterprise.config.serverbeans.Domain;
+import fish.payara.microprofile.SetSecureMicroprofileConfigurationCommand;
 import java.util.logging.Logger;
 import javax.inject.Inject;
+import javax.security.auth.Subject;
 import org.glassfish.api.ActionReport;
 import org.glassfish.api.Param;
-import org.glassfish.api.admin.AdminCommand;
 import org.glassfish.api.admin.AdminCommandContext;
 import org.glassfish.api.admin.ExecuteOn;
 import org.glassfish.api.admin.RestEndpoint;
@@ -72,8 +74,8 @@ import org.jvnet.hk2.config.TransactionFailure;
             path = "set-openapi-configuration",
             description = "Sets the OpenAPI Configuration")
 })
-public class SetOpenApiConfigurationCommand implements AdminCommand {
-    
+public class SetOpenApiConfigurationCommand extends SetSecureMicroprofileConfigurationCommand {
+
     private static final Logger LOGGER = Logger.getLogger(SetOpenApiConfigurationCommand.class.getName());
 
     @Inject
@@ -85,12 +87,13 @@ public class SetOpenApiConfigurationCommand implements AdminCommand {
     @Param(name = "virtualServers", optional = true)
     private String virtualServers;
 
-    @Param(optional = true, defaultValue = "server-config")
-    private String target;
+    @Inject
+    private Domain domain;
 
     @Override
     public void execute(AdminCommandContext context) {
         ActionReport actionReport = context.getActionReport();
+        Subject subject = context.getSubject();
         // Check for the existing config
         if (targetUtil.getConfig(target) == null) {
             actionReport.setMessage("No such config name: " + targetUtil);
@@ -101,6 +104,19 @@ public class SetOpenApiConfigurationCommand implements AdminCommand {
         OpenApiServiceConfiguration config = targetUtil.getConfig(target)
                 .getExtensionByType(OpenApiServiceConfiguration.class);
 
+        if (Boolean.TRUE.equals(securityEnabled)
+                || Boolean.parseBoolean(config.getSecurityEnabled())) {
+            ActionReport checkUserReport = actionReport.addSubActionsReport();
+            ActionReport createUserReport = actionReport.addSubActionsReport();
+            if (!defaultMicroprofileUserExists(checkUserReport, subject) && !checkUserReport.hasFailures()) {
+                createDefaultMicroprofileUser(createUserReport, subject);
+            }
+            if (checkUserReport.hasFailures() || createUserReport.hasFailures()) {
+                actionReport.setActionExitCode(ActionReport.ExitCode.FAILURE);
+                return;
+            }
+        }
+
         try {
             ConfigSupport.apply(configProxy -> {
                 if (enabled != null) {
@@ -109,12 +125,23 @@ public class SetOpenApiConfigurationCommand implements AdminCommand {
                 if (virtualServers != null) {
                     configProxy.setVirtualServers(virtualServers);
                 }
+                if (securityEnabled != null) {
+                    configProxy.setSecurityEnabled(securityEnabled.toString());
+                }
+                if (roles != null) {
+                    configProxy.setRoles(roles);
+                }
                 return configProxy;
             }, config);
 
             actionReport.setMessage("Restart server for change to take effect");
         } catch (TransactionFailure ex) {
             actionReport.failure(LOGGER, "Failed to update OpenAPI configuration", ex);
+        }
+
+        // If everything has passed, scrap the subaction reports as we don't want to print them out
+        if (!actionReport.hasFailures() && !actionReport.hasWarnings()) {
+            actionReport.getSubActionsReport().clear();
         }
     }
 

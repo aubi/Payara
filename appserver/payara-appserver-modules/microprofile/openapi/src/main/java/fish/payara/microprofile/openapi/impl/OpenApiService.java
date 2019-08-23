@@ -40,6 +40,16 @@
 package fish.payara.microprofile.openapi.impl;
 
 import com.sun.enterprise.v3.services.impl.GrizzlyService;
+import fish.payara.microprofile.openapi.api.OpenAPIBuildException;
+import fish.payara.microprofile.openapi.impl.admin.OpenApiServiceConfiguration;
+import fish.payara.microprofile.openapi.impl.config.OpenApiConfiguration;
+import fish.payara.microprofile.openapi.impl.model.OpenAPIImpl;
+import fish.payara.microprofile.openapi.impl.processor.ApplicationProcessor;
+import fish.payara.microprofile.openapi.impl.processor.BaseProcessor;
+import fish.payara.microprofile.openapi.impl.processor.FileProcessor;
+import fish.payara.microprofile.openapi.impl.processor.FilterProcessor;
+import fish.payara.microprofile.openapi.impl.processor.ModelReaderProcessor;
+import fish.payara.microprofile.openapi.impl.processor.PathsProcessor;
 import java.beans.PropertyChangeEvent;
 import java.net.InetAddress;
 import java.net.MalformedURLException;
@@ -52,9 +62,7 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import static java.util.logging.Level.WARNING;
 import java.util.logging.Logger;
-import static java.util.stream.Collectors.toSet;
 import javax.inject.Inject;
 import org.eclipse.microprofile.openapi.models.OpenAPI;
 import org.glassfish.api.StartupRunLevel;
@@ -81,15 +89,8 @@ import org.jvnet.hk2.config.ConfigSupport;
 import org.jvnet.hk2.config.NotProcessed;
 import org.jvnet.hk2.config.UnprocessedChangeEvents;
 
-import fish.payara.microprofile.openapi.api.OpenAPIBuildException;
-import fish.payara.microprofile.openapi.impl.admin.OpenApiServiceConfiguration;
-import fish.payara.microprofile.openapi.impl.config.OpenApiConfiguration;
-import fish.payara.microprofile.openapi.impl.model.OpenAPIImpl;
-import fish.payara.microprofile.openapi.impl.processor.ApplicationProcessor;
-import fish.payara.microprofile.openapi.impl.processor.BaseProcessor;
-import fish.payara.microprofile.openapi.impl.processor.FileProcessor;
-import fish.payara.microprofile.openapi.impl.processor.FilterProcessor;
-import fish.payara.microprofile.openapi.impl.processor.ModelReaderProcessor;
+import static java.util.logging.Level.WARNING;
+import static java.util.stream.Collectors.toSet;
 
 @Service(name = "microprofile-openapi-service")
 @RunLevel(StartupRunLevel.VAL)
@@ -124,6 +125,10 @@ public class OpenApiService implements PostConstruct, PreDestroy, EventListener,
 
     public boolean isEnabled() {
         return Boolean.parseBoolean(config.getEnabled());
+    }
+    
+    public boolean isSecurityEnabled() {
+        return Boolean.parseBoolean(config.getSecurityEnabled());
     }
 
     /**
@@ -285,6 +290,7 @@ public class OpenApiService implements PostConstruct, PreDestroy, EventListener,
                 openapi = new ApplicationProcessor(classes).process(openapi, appConfig);
                 openapi = new BaseProcessor(baseURLs).process(openapi, appConfig);
                 openapi = new FilterProcessor().process(openapi, appConfig);
+                openapi = new PathsProcessor().process(openapi, appConfig);
             } catch (Throwable t) {
                 throw new OpenAPIBuildException(t);
             }

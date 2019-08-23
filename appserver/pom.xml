@@ -59,7 +59,7 @@
         <developerConnection>scm:svn:https://svn.java.net/svn/glassfish~svn/tags/4.1/main/appserver</developerConnection>
         <url>https://svn.java.net/svn/glassfish~svn/tags/4.1/main/appserver</url>
         <tag>payara-blue-4.1.2.191.5</tag>
-    </scm>
+   </scm>
 
     <properties>
         <jms-api.version>2.0.1</jms-api.version>
@@ -67,7 +67,7 @@
         <jsp-impl.version>2.3.4</jsp-impl.version>
         <jstl-api.version>1.2.2</jstl-api.version>
         <jstl-impl.version>1.2.5</jstl-impl.version>
-        <mojarra.version>2.2.18.payara-p2</mojarra.version>
+        <mojarra.version>2.2.20.payara-p1</mojarra.version>
         <jsf-ext.version>0.2</jsf-ext.version>
         <woodstock.version>4.0.2.10.payara4-p7</woodstock.version>
         <javax.ejb-api.version>3.2</javax.ejb-api.version>

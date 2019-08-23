@@ -74,5 +74,13 @@ public class BootCommand {
         }
         return result;
     }
-   
+
+    public String getCommand() {
+        return command;
+    }
+
+    public String[] getArguments() {
+        return arguments;
+    }
+
 }

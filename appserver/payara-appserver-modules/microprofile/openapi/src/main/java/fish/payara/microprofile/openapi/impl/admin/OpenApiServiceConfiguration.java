@@ -39,6 +39,7 @@
  */
 package fish.payara.microprofile.openapi.impl.admin;
 
+import static fish.payara.microprofile.Constants.DEFAULT_GROUP_NAME;
 import java.beans.PropertyVetoException;
 import org.glassfish.api.admin.config.ConfigExtension;
 import org.jvnet.hk2.config.Attribute;
@@ -60,13 +61,27 @@ public interface OpenApiServiceConfiguration extends ConfigBeanProxy, ConfigExte
     void setEnabled(String value) throws PropertyVetoException;
 
     /**
-     * String value defines the attached virtual servers.
-     *
-     * @return
+     * @return a String value defines the attached virtual servers.
      */
     @Attribute(dataType = String.class)
     String getVirtualServers();
 
     void setVirtualServers(String value) throws PropertyVetoException;
+
+    /**
+     * @return a Boolean value determining if the security is enabled or not.
+     */
+    @Attribute(defaultValue = "false", dataType = Boolean.class)
+    String getSecurityEnabled();
+
+    void setSecurityEnabled(String value) throws PropertyVetoException;
+
+    /**
+     * @return a String value defines the roles.
+     */
+    @Attribute(defaultValue = DEFAULT_GROUP_NAME, dataType = String.class)
+    String getRoles();
+
+    void setRoles(String value) throws PropertyVetoException;
 
 }

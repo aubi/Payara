@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  * 
- *    Copyright (c) [2018] Payara Foundation and/or its affiliates. All rights reserved.
+ *    Copyright (c) [2018-2019] Payara Foundation and/or its affiliates. All rights reserved.
  * 
  *     The contents of this file are subject to the terms of either the GNU
  *     General Public License Version 2 only ("GPL") or the Common Development
@@ -100,7 +100,7 @@ public class MetricsService implements EventListener {
     private MetricsServiceConfiguration metricsServiceConfiguration;
     
     private Boolean metricsEnabled;
-    
+
     private Boolean metricsSecure;
 
     private List<MBeanMetadata> unresolvedBaseMetadataList;
@@ -118,7 +118,8 @@ public class MetricsService implements EventListener {
         events.register(this);
         metricsServiceConfiguration = serviceLocator.getService(MetricsServiceConfiguration.class);
         // Only start if metrics are enabled
-        if (isMetricsEnabled()) {
+
+        if (isEnabled()) {
             Executors.newSingleThreadExecutor().submit(new Runnable(){ 
                 @Override
                 public void run() {
@@ -215,7 +216,7 @@ public class MetricsService implements EventListener {
         return config;
     }
 
-    public Boolean isMetricsEnabled() {
+    public Boolean isEnabled() {
         if (metricsEnabled == null) {
             metricsEnabled = Boolean.valueOf(metricsServiceConfiguration.getEnabled());
         }
@@ -232,9 +233,13 @@ public class MetricsService implements EventListener {
         }
         return metricsSecure;
     }
-    
+
     public void resetMetricsSecureProperty() {
         metricsSecure = null;
+    }
+    
+    public boolean isSecurityEnabled() {
+        return Boolean.parseBoolean(metricsServiceConfiguration.getSecurityEnabled());
     }
 
     public Map<String, Metric> getMetricsAsMap(String registryName) throws NoSuchRegistryException {

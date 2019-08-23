@@ -62,8 +62,8 @@
         <url>scm:git:git@github.com:payara/payara.git</url>
         <developerConnection>scm:git:git@github.com:payara/payara.git</developerConnection>
         <tag>payara-blue-4.1.2.191.5</tag>
-    </scm>
-    
+   </scm>
+
     <issueManagement>
         <system>Github</system>
         <url>https://github.com/payara/Payara/issues</url>
@@ -216,7 +216,7 @@
         <asm.version>5.0.4</asm.version>
         <shoal.version>1.7.0-M1</shoal.version>
         <ha-api.version>3.1.11</ha-api.version>
-        <glassfishbuild.version>3.2.20.payara-p1</glassfishbuild.version>
+        <glassfishbuild.version>3.2.20.payara-p2</glassfishbuild.version>
         <source-annotation-processor.version>1.0</source-annotation-processor.version>
         <logging-annotation-processor.version>1.8</logging-annotation-processor.version>
         <command-security-plugin.version>1.0.7</command-security-plugin.version>
@@ -722,7 +722,7 @@ Parent is ${project.parent}</echo>
                     <skip>${javadoc.skip}</skip>
                 </configuration>
             </plugin>
-	    <plugin>
+            <plugin>
                 <groupId>org.glassfish.build</groupId>
                 <artifactId>command-security-maven-plugin</artifactId>
                 <version>${command-security-plugin.version}</version>
@@ -1156,6 +1156,19 @@ Parent is ${project.parent}</echo>
                 <artifactId>hazelcast</artifactId>
                 <version>${hazelcast.version}</version>
             </dependency>
+
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcprov-jdk15on</artifactId>
+                <version>1.62</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk15on</artifactId>
+                <version>1.62</version>
+                <scope>test</scope>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -1380,7 +1393,7 @@ Parent is ${project.parent}</echo>
             <optional>true</optional>
         </dependency>
     </dependencies>
-    
+
     <reporting>
         <plugins>
             <plugin>
@@ -1405,5 +1418,5 @@ Parent is ${project.parent}</echo>
             </plugin>
         </plugins>
     </reporting>
-    
+
 </project>

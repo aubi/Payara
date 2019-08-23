@@ -59,6 +59,7 @@ holder.
         <module>metrics</module>
         <module>openapi</module>
         <module>opentracing</module>
+        <module>microprofile-common</module>
     </modules>
 
     <build>

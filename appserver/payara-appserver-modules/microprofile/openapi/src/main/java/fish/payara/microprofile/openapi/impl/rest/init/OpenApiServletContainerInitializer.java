@@ -39,6 +39,7 @@
  */
 package fish.payara.microprofile.openapi.impl.rest.init;
 
+import fish.payara.microprofile.MicroProfileSecurityUtil;
 import fish.payara.microprofile.openapi.impl.admin.OpenApiServiceConfiguration;
 import fish.payara.microprofile.openapi.impl.rest.app.OpenApiApplication;
 import static fish.payara.microprofile.openapi.impl.rest.app.OpenApiApplication.OPEN_API_APPLICATION_PATH;
@@ -46,10 +47,13 @@ import static java.util.Arrays.asList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import javax.servlet.HttpConstraintElement;
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRegistration;
+import javax.servlet.ServletSecurityElement;
+import static javax.servlet.annotation.ServletSecurity.TransportGuarantee.CONFIDENTIAL;
 import org.glassfish.internal.api.Globals;
 import org.glassfish.jersey.servlet.init.JerseyServletContainerInitializer;
 
@@ -77,13 +81,21 @@ public class OpenApiServletContainerInitializer implements ServletContainerIniti
 
         OpenApiServiceConfiguration configuration = Globals.getDefaultHabitat().getService(OpenApiServiceConfiguration.class);
         String virtualServers = configuration.getVirtualServers();
-        if ((virtualServers != null && !virtualServers.trim().isEmpty())
+        if ((virtualServers != null && virtualServers.trim().length() != 0)
                 && !asList(virtualServers.split(",")).contains(ctx.getVirtualServerName())) {
             return;
         }
 
         // Start the OpenAPI application
         new JerseyServletContainerInitializer().onStartup(new HashSet<>(asList(OpenApiApplication.class)), ctx);
+
+        ServletRegistration.Dynamic reg = (ServletRegistration.Dynamic) ctx.getServletRegistrations().get(OpenApiApplication.class.getName());
+        if (Boolean.parseBoolean(configuration.getSecurityEnabled())) {
+            String[] roles = configuration.getRoles().split(",");
+            MicroProfileSecurityUtil.setGroupRoleMapping(roles, roles);
+            reg.setServletSecurity(new ServletSecurityElement(new HttpConstraintElement(CONFIDENTIAL, roles)));
+            ctx.declareRoles(roles);
+        }
     }
 
 }
