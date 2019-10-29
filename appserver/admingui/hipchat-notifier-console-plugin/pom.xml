@@ -4,7 +4,7 @@
     <parent>
         <groupId>fish.payara.admingui</groupId>
         <artifactId>admingui</artifactId>
-        <version>4.1.2.191.7</version>
+        <version>4.1.2.191.8</version>
     </parent>
     <artifactId>hipchat-notifier-console-plugin</artifactId>
     <packaging>glassfish-jar</packaging>
