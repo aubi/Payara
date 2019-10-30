@@ -44,7 +44,7 @@
     <parent>
         <groupId>org.glassfish.main.flashlight</groupId>
         <artifactId>nucleus-flashlight</artifactId>
-        <version>4.1.2.191.7</version>
+        <version>4.1.2.191.8</version>
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>

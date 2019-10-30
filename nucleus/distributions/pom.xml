@@ -49,7 +49,7 @@
     <parent>
         <groupId>fish.payara</groupId>
         <artifactId>payara-nucleus-parent</artifactId>
-        <version>4.1.2.191.7</version>
+        <version>4.1.2.191.8</version>
     </parent>
     <packaging>pom</packaging>
     <groupId>org.glassfish.main.distributions</groupId>

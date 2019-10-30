@@ -43,7 +43,7 @@ holder.
     <parent>
         <groupId>fish.payara.microprofile</groupId>
         <artifactId>microprofile</artifactId>
-        <version>4.1.2.191.7</version>
+        <version>4.1.2.191.8</version>
     </parent>
     
     <artifactId>microprofile-opentracing</artifactId>
