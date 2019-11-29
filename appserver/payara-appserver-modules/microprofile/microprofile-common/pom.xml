@@ -43,7 +43,7 @@
     <parent>
         <groupId>fish.payara.microprofile</groupId>
         <artifactId>microprofile</artifactId>
-        <version>4.1.2.191.8</version>
+        <version>4.1.2.191.9</version>
     </parent>
     <groupId>fish.payara.microprofile.common</groupId>
     <artifactId>microprofile-common</artifactId>
