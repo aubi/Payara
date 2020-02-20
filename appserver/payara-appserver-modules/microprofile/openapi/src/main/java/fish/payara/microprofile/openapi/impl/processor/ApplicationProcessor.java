@@ -1011,7 +1011,7 @@ public class ApplicationProcessor implements OASProcessor, ApiVisitor {
             return false;
         }
 
-        final Schema schema = referenceClass.getDeclaredAnnotation(Schema.class);
+        final Schema schema = AnnotationInfo.valueOf(referenceClass).getAnnotation(Schema.class);
         // Set the reference name
         referee.setRef(schema == null || schema.name().isEmpty() ? referenceClass.getSimpleName() : schema.name());
 
