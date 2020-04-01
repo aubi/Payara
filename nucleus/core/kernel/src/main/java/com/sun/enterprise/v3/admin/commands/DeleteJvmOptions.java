@@ -49,6 +49,7 @@ import com.sun.enterprise.util.SystemPropertyConstants;
 import com.sun.enterprise.util.i18n.StringManager;
 import java.beans.PropertyVetoException;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -160,22 +161,28 @@ public final class DeleteJvmOptions implements AdminCommand, AdminCommandSecurit
     }
     */
     //@ForTimeBeing :)
-    private void deleteX(final JvmOptionBag bag, final List<String> toRemove, final ActionReport.MessagePart part) throws Exception {
+    private void deleteX(final JvmOptionBag bag, final List<String> toRemoveOptions, final ActionReport.MessagePart part) throws Exception {
         SingleConfigCode<JvmOptionBag> scc = new SingleConfigCode<JvmOptionBag>() {
             @Override
             public Object run(JvmOptionBag bag) throws PropertyVetoException, TransactionFailure {
                 List<String> jvmopts = new ArrayList<>(bag.getJvmOptions());
                 int orig = jvmopts.size();
-                                          
-                for (String option : toRemove) {
-                    if (jvmopts.contains(new JvmOption(option).option)) {
-                        jvmopts.remove(option);
+                boolean removed = false;
+                Iterator<String> iter;
+                for (String toRemoveOption : toRemoveOptions) {
+                    String option = new JvmOption(toRemoveOption).option;
+                    iter = jvmopts.iterator();
+                    while (iter.hasNext()) {
+                        if (new JvmOption(iter.next()).option.equals(option)) {
+                            iter.remove();
+                            removed = true;
+                        }
                     }
                 }
-                
+
                 bag.setJvmOptions(jvmopts);
                 int now = jvmopts.size();
-                if (orig != now) {
+                if (removed) {
                     part.setMessage(lsm.getString("deleted.message", (orig - now)));
                 } else {
                     part.setMessage(lsm.getString("no.option.deleted"));
