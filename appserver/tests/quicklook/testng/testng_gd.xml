@@ -142,11 +142,11 @@
 	<class name="test.ejb.sfulnoi.SfulnoiTestNG" />
     </classes>
   </test> 
-  <test name="ejb_cmp_ear">
+  <!--<test name="ejb_cmp_ear">
     <classes>
         <class name="test.CmpRosterTestNG" />
     </classes>
-  </test>
+  </test>-->
   <!-- MDB tests parameters -->
   <!--  IGNORED. JIRA to fix = QA-185
   <parameter name="MDB_APP_DIR" value="./dist/mdb/"/>
