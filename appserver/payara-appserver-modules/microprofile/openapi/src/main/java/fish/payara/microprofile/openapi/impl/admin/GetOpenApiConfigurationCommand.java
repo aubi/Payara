@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) [2018] Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) [2018-2019] Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
@@ -75,7 +75,7 @@ import org.jvnet.hk2.annotations.Service;
 })
 public class GetOpenApiConfigurationCommand implements AdminCommand {
 
-    private final String[] OUTPUT_HEADERS = {"Enabled", "VirtualServers", "Security Enabled", "Roles"};
+    private final String[] OUTPUT_HEADERS = {"Enabled", "VirtualServers", "CorsHeaders", "Security Enabled", "Roles"};
 
     @Inject
     private Target targetUtil;
@@ -101,6 +101,7 @@ public class GetOpenApiConfigurationCommand implements AdminCommand {
         Object[] outputValues = {
             openApiConfig.getEnabled(),
             openApiConfig.getVirtualServers(),
+            openApiConfig.getCorsHeaders(),
             openApiConfig.getSecurityEnabled(),
             openApiConfig.getRoles()
         };
@@ -111,6 +112,7 @@ public class GetOpenApiConfigurationCommand implements AdminCommand {
         Map<String, Object> extraPropertiesMap = new HashMap<>();
         extraPropertiesMap.put("enabled", openApiConfig.getEnabled());
         extraPropertiesMap.put("virtualServers", openApiConfig.getVirtualServers());
+        extraPropertiesMap.put("corsHeaders", openApiConfig.getCorsHeaders());
         extraPropertiesMap.put("securityenabled", openApiConfig.getSecurityEnabled());
         extraPropertiesMap.put("roles", openApiConfig.getRoles());
 

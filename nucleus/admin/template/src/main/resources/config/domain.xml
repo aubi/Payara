@@ -40,6 +40,8 @@
 
 -->
 
+<!-- Portions Copyright [2016-2019] [Payara Foundation and/or its affiliates] -->
+
 <domain log-root="${com.sun.aas.instanceRoot}/logs" application-root="${com.sun.aas.instanceRoot}/applications" version="10.0">
   <security-configurations>
     <authentication-service default="true" name="adminAuth" use-password-credential="true">
@@ -195,6 +197,7 @@
         <!-- End of OSGi bundle configurations -->
         <jvm-options>-XX:NewRatio=2</jvm-options>
         <jvm-options>-Djdk.tls.rejectClientInitiatedRenegotiation=true</jvm-options>
+        <jvm-options>[Azul-1.8.0u222|1.8.0u500]-XX:+UseOpenJSSE</jvm-options>
       </java-config>
       <network-config>
         <protocols>

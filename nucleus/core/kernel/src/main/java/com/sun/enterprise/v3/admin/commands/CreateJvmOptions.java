@@ -37,12 +37,14 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright [2018-2019] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.v3.admin.commands;
 
 import com.sun.enterprise.config.serverbeans.Config;
 import com.sun.enterprise.config.serverbeans.JavaConfig;
 import com.sun.enterprise.config.serverbeans.JvmOptionBag;
+import com.sun.enterprise.universal.xml.MiniXmlParser.JvmOption;
 import com.sun.enterprise.util.SystemPropertyConstants;
 import com.sun.enterprise.util.i18n.StringManager;
 import java.beans.PropertyVetoException;
@@ -95,6 +97,12 @@ public final class CreateJvmOptions implements AdminCommand, AdminCommandSecurit
     
     @Param(name="jvm_option_name", primary=true, separator=':')
     List<String> jvmOptions;
+
+    @Param(name="min-jvm", optional = true)
+    String minJVM;
+    
+    @Param(name="max-jvm", optional = true)
+    String maxJVM;
     
     @Inject
     Target targetService;
@@ -130,10 +138,17 @@ public final class CreateJvmOptions implements AdminCommand, AdminCommandSecurit
             } else
                 bag = jc;
             ActionReport.MessagePart part = report.getTopMessagePart().addChild();
-            List<String> validOptions = new ArrayList<String>(jvmOptions);
+
+            List<String> validOptions = new ArrayList<>();
+
+            for (String option : jvmOptions) {
+                JvmOption jvmOption = new JvmOption(option);
+                validOptions.add(jvmOption.option);
+            }
+           
             validate(bag, validOptions, report); //Note: method mutates the given list
             validateSoft(bag, validOptions, report); //Note: method does not mutate the given list
-            addX(bag, validOptions, part);
+            addX(bag, new ArrayList<>(jvmOptions), part);
         } catch (IllegalArgumentException iae) {
             report.setMessage(iae.getMessage());
             report.setActionExitCode(ActionReport.ExitCode.FAILURE);
@@ -269,10 +284,29 @@ public final class CreateJvmOptions implements AdminCommand, AdminCommandSecurit
         SingleConfigCode<JvmOptionBag> scc = new SingleConfigCode<JvmOptionBag> () {
             @Override
             public Object run(JvmOptionBag bag) throws PropertyVetoException, TransactionFailure {
-                newOpts.removeAll(bag.getJvmOptions());  //"prune" the given list first to avoid duplicates
-                List<String> jvmopts = new ArrayList<String>(bag.getJvmOptions());
+                List<String> unversionedCurrentOptions = bag.getJvmOptions();
+                
+                //"prune" the given list first to avoid duplicates              
+                for (String option : unversionedCurrentOptions) {
+                    if (newOpts.contains(new JvmOption(option).option)) {
+                        newOpts.remove(option);
+                    }
+                }
+                
+                List<String> jvmopts = new ArrayList<>(bag.getJvmRawOptions());
                 int orig = jvmopts.size();
-                boolean added = jvmopts.addAll(newOpts);
+
+                List<String> convertedJvmopts = new ArrayList<>();
+                for (String option1 : newOpts) {
+                    if (JvmOption.hasVersionPattern(option1)) {
+                        convertedJvmopts.add(new JvmOption(option1).toString());
+                    } else {
+                        convertedJvmopts.add(new JvmOption(option1, minJVM, maxJVM).toString());
+                    }
+                }
+
+                boolean added = jvmopts.addAll(convertedJvmopts);
+                
                 bag.setJvmOptions(jvmopts);
                 int now = jvmopts.size();
                 if (added) {

@@ -37,7 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-// Portions Copyright [2016-2018] [Payara Foundation and/or its affiliates]
+// Portions Copyright [2016-2019] [Payara Foundation and/or its affiliates]
 package org.glassfish.grizzly.config;
 
 import java.io.IOException;
@@ -52,7 +52,6 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.inject.Provider;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLServerSocketFactory;
@@ -66,6 +65,14 @@ import org.glassfish.grizzly.ssl.SSLContextConfigurator;
 import org.glassfish.grizzly.ssl.SSLEngineConfigurator;
 import org.glassfish.hk2.api.ServiceHandle;
 import org.glassfish.hk2.api.ServiceLocator;
+
+import static org.glassfish.grizzly.config.dom.Ssl.SSL2;
+import static org.glassfish.grizzly.config.dom.Ssl.SSL2_HELLO;
+import static org.glassfish.grizzly.config.dom.Ssl.SSL3;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS1;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS11;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS12;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS13;
 
 /**
  * @author oleksiys
@@ -146,23 +153,26 @@ public class SSLConfigurator extends SSLEngineConfigurator {
 //                }
                 // ssl protocol variants
                 if (Boolean.parseBoolean(ssl.getSsl2Enabled())) {
-                    tmpSSLArtifactsList.add("SSLv2");
+                    tmpSSLArtifactsList.add(SSL2);
                 }
                 if (Boolean.parseBoolean(ssl.getSsl3Enabled())) {
-                    tmpSSLArtifactsList.add("SSLv3");
+                    tmpSSLArtifactsList.add(SSL3);
                 }
                 if (Boolean.parseBoolean(ssl.getTlsEnabled())) {
-                    tmpSSLArtifactsList.add("TLSv1");
+                    tmpSSLArtifactsList.add(TLS1);
                 }
                 if (Boolean.parseBoolean(ssl.getTls11Enabled())) {
-                    tmpSSLArtifactsList.add("TLSv1.1");
+                    tmpSSLArtifactsList.add(TLS11);
                 }
                 if (Boolean.parseBoolean(ssl.getTls12Enabled())) {
-                    tmpSSLArtifactsList.add("TLSv1.2");
+                    tmpSSLArtifactsList.add(TLS12);
+                }
+                if (Boolean.parseBoolean(ssl.getTls13Enabled())) {
+                    tmpSSLArtifactsList.add(TLS13);
                 }
                 if (Boolean.parseBoolean(ssl.getSsl3Enabled())
                         || Boolean.parseBoolean(ssl.getTlsEnabled())) {
-                    tmpSSLArtifactsList.add("SSLv2Hello");
+                    tmpSSLArtifactsList.add(SSL2_HELLO);
                 }
                 if (tmpSSLArtifactsList.isEmpty()) {
                     logEmptyWarning(ssl, "WEB0307: All SSL protocol variants disabled for network-listener {0},"
@@ -414,6 +424,7 @@ public class SSLConfigurator extends SSLEngineConfigurator {
         }
         
         // Grizzly 2.3.28 introduced a new method on the base class which must be overridden
+        @Override
         public SSLContext createSSLContext(boolean throwException) {
             return configureSSL();
         }
@@ -491,7 +502,7 @@ public class SSLConfigurator extends SSLEngineConfigurator {
         @Override
         public void setTrustStoreType(String trustStoreType) {
             throw new IllegalStateException("The configuration is immutable");
-        }
+        }       
     }
 
     private String getKeyStorePassword(Ssl ssl) {

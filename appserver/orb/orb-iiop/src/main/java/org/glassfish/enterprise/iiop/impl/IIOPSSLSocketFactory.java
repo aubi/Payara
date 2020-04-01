@@ -38,7 +38,7 @@
  * holder.
  */
 
-// Portions Copyright [2016-2018] [Payara Foundation]
+// Portions Copyright [2016-2019] [Payara Foundation]
 
 package org.glassfish.enterprise.iiop.impl;
 
@@ -50,7 +50,6 @@ import com.sun.corba.ee.spi.transport.ORBSocketFactory;
 import com.sun.enterprise.config.serverbeans.Config;
 import com.sun.enterprise.security.integration.AppClientSSL;
 import com.sun.logging.LogDomains;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
@@ -73,7 +72,6 @@ import javax.net.ssl.SSLServerSocket;
 import javax.net.ssl.SSLServerSocketFactory;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
-
 import org.glassfish.api.admin.ProcessEnvironment;
 import org.glassfish.api.admin.ProcessEnvironment.ProcessType;
 import org.glassfish.api.admin.ServerEnvironment;
@@ -86,6 +84,13 @@ import org.glassfish.orb.admin.config.IiopListener;
 import org.glassfish.orb.admin.config.IiopService;
 import org.glassfish.security.common.CipherInfo;
 
+import static org.glassfish.grizzly.config.dom.Ssl.SSL;
+import static org.glassfish.grizzly.config.dom.Ssl.SSL2;
+import static org.glassfish.grizzly.config.dom.Ssl.SSL3;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS11;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS12;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS13;
 
 /**
  * This is socket factory used to create either plain sockets or SSL
@@ -97,12 +102,6 @@ import org.glassfish.security.common.CipherInfo;
 public class IIOPSSLSocketFactory implements ORBSocketFactory {
     private static final Logger _logger = LogDomains.getLogger(IIOPSSLSocketFactory.class, LogDomains.CORBA_LOGGER);
 
-    private static final String TLS12 = "TLSv1.2";
-    private static final String TLS11 = "TLSv1.1";
-    private static final String TLS = "TLS";
-    private static final String SSL3 = "SSLv3";
-    private static final String SSL2 = "SSLv2";
-    private static final String SSL = "SSL";
     private static final String SSL_MUTUALAUTH = "SSL_MUTUALAUTH";
     private static final String PERSISTENT_SSL = "PERSISTENT_SSL";
 
@@ -140,7 +139,7 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
         try {
             ProcessEnvironment penv = null;
             ProcessType processType = null;
-            boolean notServerOrACC = Globals.getDefaultHabitat() == null ? true : false;
+            boolean notServerOrACC = Globals.getDefaultHabitat() == null;
             if (!notServerOrACC) {
                 penv = Globals.get(ProcessEnvironment.class);
                 processType = penv.getProcessType();
@@ -154,22 +153,22 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
                 List<IiopListener> iiopListeners = iiopBean.getIiopListener();
                 for (IiopListener listener : iiopListeners) {
                     Ssl ssl = listener.getSsl();
-                    SSLInfo sslInfo = null;
+                    SSLInfo sslInfo;
                     boolean securityEnabled = Boolean.valueOf(listener.getSecurityEnabled());
 
                     if (securityEnabled) {
                         if (ssl != null) {
                             boolean ssl2Enabled = Boolean.valueOf(ssl.getSsl2Enabled());
+                            boolean ssl3Enabled = Boolean.valueOf(ssl.getSsl3Enabled());
                             boolean tlsEnabled = Boolean.valueOf(ssl.getTlsEnabled());
                             boolean tlsEnabled11 = Boolean.valueOf(ssl.getTls11Enabled());
                             boolean tlsEnabled12 = Boolean.valueOf(ssl.getTls12Enabled());
-                            boolean ssl3Enabled = Boolean.valueOf(ssl.getSsl3Enabled());
-
+                            boolean tlsEnabled13 = Boolean.valueOf(ssl.getTls13Enabled());
+                            
                             sslInfo = init(ssl.getCertNickname(),
                                     ssl2Enabled, ssl.getSsl2Ciphers(),
                                     ssl3Enabled, ssl.getSsl3TlsCiphers(),
-                                    tlsEnabled, tlsEnabled11, tlsEnabled12);
-                            
+                                    tlsEnabled, tlsEnabled11, tlsEnabled12, tlsEnabled13);
                         } else {
                             sslInfo = getDefaultSslInfo();
                             
@@ -186,26 +185,33 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
                         boolean tlsEnabled = Boolean.valueOf(outboundSsl.getTlsEnabled());
                         boolean tlsEnabled11 = Boolean.valueOf(outboundSsl.getTls11Enabled());
                         boolean tlsEnabled12 = Boolean.valueOf(outboundSsl.getTls12Enabled());
+                        boolean tlsEnabled13 = Boolean.valueOf(outboundSsl.getTls13Enabled());
                         clientSslInfo = init(outboundSsl.getCertNickname(),
                                 ssl2Enabled,
                                 outboundSsl.getSsl2Ciphers(),
                                 ssl3Enabled,
                                 outboundSsl.getSsl3TlsCiphers(),
-                                tlsEnabled, tlsEnabled11, tlsEnabled12);
+                                tlsEnabled,
+                                tlsEnabled11,
+                                tlsEnabled12,
+                                tlsEnabled13
+                        );
+
                     }
                 }
                 if (clientSslInfo == null) {
                     clientSslInfo = getDefaultSslInfo();
                 }
             } else {
-                if ((processType != null) && (processType == ProcessType.ACC)) {
+                if (processType == ProcessType.ACC) {
                     IIOPSSLUtil sslUtil = Globals.getDefaultHabitat().getService(IIOPSSLUtil.class);
                     AppClientSSL clientSsl = (AppClientSSL) sslUtil.getAppClientSSL();
                     if (clientSsl != null) {
                         clientSslInfo = init(clientSsl.getCertNickname(),
                                 clientSsl.getSsl2Enabled(), clientSsl.getSsl2Ciphers(),
                                 clientSsl.getSsl3Enabled(), clientSsl.getSsl3TlsCiphers(),
-                                clientSsl.getTlsEnabled(), clientSsl.getTls11Enabled(), clientSsl.getTls12Enabled());
+                                clientSsl.getTlsEnabled(), clientSsl.getTls11Enabled(),
+                                clientSsl.getTls12Enabled(), clientSsl.getTls13Enabled());
                     } else { // include case keystore, truststore jvm option
                         clientSslInfo = getDefaultSslInfo();
                     }
@@ -223,7 +229,7 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
      * Return a default SSLInfo object.
      */
     private SSLInfo getDefaultSslInfo() throws Exception {
-        return init(null, false, null, true, null, true, true, true);
+       return init(null, false, null, true, null, true, true, true, false);
     }
 
     /**
@@ -232,10 +238,16 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
      * server side to create a SSLContext
      * it is called once for each serveralias and once for each clientalias
      */
-    private SSLInfo init(String alias, boolean ssl2Enabled, String ssl2Ciphers, boolean ssl3Enabled,
-            String ssl3TlsCiphers, boolean tlsEnabled, boolean tlsEnabled11, boolean tlsEnabled12) throws Exception {
+    private SSLInfo init(String alias,
+            boolean ssl2Enabled, String ssl2Ciphers,
+            boolean ssl3Enabled, String ssl3TlsCiphers,
+            boolean tlsEnabled, boolean tlsEnabled11,
+            boolean tlsEnabled12, boolean tlsEnabled13) throws Exception {
+
         String protocol;
-        if (tlsEnabled12) {
+        if (tlsEnabled13) {
+            protocol = TLS13;
+        } else if (tlsEnabled12) {
             protocol = TLS12;
         } else if (tlsEnabled11) {
             protocol = TLS11;
@@ -250,15 +262,19 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
         }
 
         String[] ssl3TlsCipherArr = null;
-        if (tlsEnabled11 || tlsEnabled12 || tlsEnabled || ssl3Enabled) {
-            ssl3TlsCipherArr = getEnabledCipherSuites(ssl3TlsCiphers,
-                    false, ssl3Enabled, tlsEnabled, tlsEnabled11, tlsEnabled12);
+        if (tlsEnabled11 || tlsEnabled12 || tlsEnabled13 || tlsEnabled || ssl3Enabled) {
+            ssl3TlsCipherArr = getEnabledCipherSuites(
+                    ssl3TlsCiphers, false, ssl3Enabled,
+                    tlsEnabled, tlsEnabled11, tlsEnabled12, tlsEnabled13
+            );
         }
 
         String[] ssl2CipherArr = null;
         if (ssl2Enabled) {
-            ssl2CipherArr = getEnabledCipherSuites(ssl2Ciphers,
-                    true, false, false, false, false);
+            ssl2CipherArr = getEnabledCipherSuites(
+                    ssl2Ciphers, true, false,
+                    false, false, false, false
+            );
         }
 
         SSLContext ctx = SSLContext.getInstance(protocol);
@@ -283,6 +299,9 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
         }
         if (tlsEnabled12) {
             newInfo.addProtocol(TLS12);
+        }
+        if (tlsEnabled13) {
+            newInfo.addProtocol(TLS13);
         }
         return newInfo;
     }
@@ -310,9 +329,10 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
                     + " inetSocketAddress =" + inetSocketAddress);
         }
 
-        if (type.equals(SSL_MUTUALAUTH) || type.equals(SSL) || type.equals(PERSISTENT_SSL)) {
-            return createSSLServerSocket(type, inetSocketAddress);
-        } else {
+	if(type.equals(SSL_MUTUALAUTH) || type.equals(SSL) ||
+		type.equals(PERSISTENT_SSL)) {
+	    return createSSLServerSocket(type, inetSocketAddress);
+	} else {
             ServerSocket serverSocket = null;
             if (orb.getORBData().acceptorSocketType().equals(ORBConstants.SOCKETCHANNEL)) {
                 ServerSocketChannel serverSocketChannel = ServerSocketChannel.open();
@@ -348,7 +368,7 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
                 Socket socket = null;
                 if (_logger.isLoggable(Level.FINE)) {
                     _logger.log(Level.FINE, "Creating CLEAR_TEXT socket for:" + port);
-                }
+		}
 
                 if (orb.getORBData().connectionSocketType().equals(ORBConstants.SOCKETCHANNEL)) {
                     SocketChannel socketChannel = ORBUtility.openSocketChannel(inetSocketAddress);
@@ -359,7 +379,6 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
 
                 // Enable SO_KEEPALIVE if required
                 enableSOKeepAliveAsRequired(socket);
-
                 // Disable Nagle's algorithm (i.e. always send immediately).
                 socket.setTcpNoDelay(true);
                 return socket;
@@ -503,6 +522,7 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
 
             // Enable SO_KEEPALIVE if required
             enableSOKeepAliveAsRequired(socket);
+
         } catch (Exception e) {
             if (_logger.isLoggable(Level.FINE)) {
                 _logger.log(Level.FINE, "iiop.createsocket_exception", new Object[]{host, String.valueOf(port)});
@@ -529,7 +549,8 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
      * @return an array of enabled Ciphers
      */
     private String[] getEnabledCipherSuites(String cipherSuiteStr,
-            boolean ssl2Enabled, boolean ssl3Enabled, boolean tlsEnabled, boolean tlsEnabled11, boolean tlsEnabled12) {
+            boolean ssl2Enabled, boolean ssl3Enabled, boolean tlsEnabled,
+            boolean tlsEnabled11, boolean tlsEnabled12, boolean tlsEnabled13) {
         String[] cipherArr = null;
         if (cipherSuiteStr != null && cipherSuiteStr.length() > 0) {
             ArrayList cipherList = new ArrayList();
@@ -540,7 +561,7 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
                     String cipher = cipherAction.substring(1);
                     CipherInfo cipherInfo = CipherInfo.getCipherInfo(cipher);
                     if (cipherInfo != null && isValidProtocolCipher(cipherInfo, ssl2Enabled, ssl3Enabled, tlsEnabled,
-                            tlsEnabled11, tlsEnabled12)) {
+                            tlsEnabled11, tlsEnabled12, tlsEnabled13)) {
                         cipherList.add(cipherInfo.getCipherName());
                     } else {
                         throw new IllegalStateException(getFormatMessage("iiop.unknown_cipher",
@@ -550,7 +571,7 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
                     String cipher = cipherAction.substring(1);
                     CipherInfo cipherInfo = CipherInfo.getCipherInfo(cipher);
                     if (cipherInfo == null || !isValidProtocolCipher(cipherInfo, ssl2Enabled, ssl3Enabled, tlsEnabled,
-                            tlsEnabled11, tlsEnabled12)) {
+                            tlsEnabled11, tlsEnabled12, tlsEnabled13)) {
                         throw new IllegalStateException(getFormatMessage("iiop.unknown_cipher",
                                 new Object[]{cipher}));
                     }
@@ -582,7 +603,7 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
         int eSize = (enableCiphers != null) ? enableCiphers.length : 0;
 
         if (_logger.isLoggable(Level.FINE)) {
-            StringBuffer buf = new StringBuffer("Default socket ciphers: ");
+            StringBuilder buf = new StringBuilder("Default socket ciphers: ");
             for (int i = 0; i < eSize; i++) {
                 buf.append(enableCiphers[i] + ", ");
             }
@@ -633,11 +654,13 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
      * @param ssl3Enabled
      * @param tlsEnabled
      */
-    private boolean isValidProtocolCipher(CipherInfo cipherInfo, boolean ssl2Enabled, boolean ssl3Enabled,
-            boolean tlsEnabled, boolean tlsEnabled11, boolean tlsEnabled12) {
+    private boolean isValidProtocolCipher(CipherInfo cipherInfo,
+            boolean ssl2Enabled, boolean ssl3Enabled, boolean tlsEnabled,
+            boolean tlsEnabled11, boolean tlsEnabled12, boolean tlsEnabled13) {
         return (tlsEnabled && cipherInfo.isTLS() ||
                 tlsEnabled11 && cipherInfo.isTLS() ||
                 tlsEnabled12 && cipherInfo.isTLS() ||
+                tlsEnabled13 && cipherInfo.isTLS() ||
                 ssl3Enabled && cipherInfo.isSSL3() ||
                 ssl2Enabled && cipherInfo.isSSL2());
     }
@@ -746,7 +769,7 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
     }
 
     class SSLInfo {
-        private SSLContext ctx;
+        private final SSLContext ctx;
         private String[] ssl3TlsCiphers = null;
         private String[] ssl2Ciphers = null;
         private ArrayList<String> allowedProtocols;
@@ -778,4 +801,4 @@ public class IIOPSSLSocketFactory implements ORBSocketFactory {
             return ssl2Ciphers;
         }
     }
-} 
+}

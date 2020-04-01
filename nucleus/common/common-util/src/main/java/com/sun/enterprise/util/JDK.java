@@ -37,6 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright [2018-2019] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.util;
 
@@ -49,32 +50,6 @@ package com.sun.enterprise.util;
  * @author bnevins
  */
 public final class JDK {
-
-    private JDK(String string) {
-        String[] split = string.split("[\\._\\-]+");
-
-        if (split.length > 0) {
-            major = Integer.parseInt(split[0]);
-        }
-        if (split.length > 1) {
-            minor = Integer.parseInt(split[1]);
-        }
-        if (split.length > 2) {
-            subminor = Integer.parseInt(split[2]);
-        }
-        if (split.length > 3) {
-            update = Integer.parseInt(split[3]);
-        }
-    }
-
-
-    public static JDK getVersion(String string) {
-        if (string.matches("([0-9]+[\\._\\-]+)*[0-9]+")) {
-            return new JDK(string);
-        } else {
-            return null;
-        }
-    }
     /**
      * See if the current JDK is legal for running GlassFish
      * @return true if the JDK is >= 1.6.0
@@ -97,37 +72,224 @@ public final class JDK {
     public static int getUpdate() {
         return update;
     }
+    
+    public static String getVendor() {
+        return vendor;
+    }
 
-    public boolean newerThan(JDK version) {
-        if (major > version.getMajor()) {
-            return true;
-        } else if (major == version.getMajor()) {
-            if (minor > version.getMinor()) {
+    public static class Version {
+        private final String vendor;
+        private final int major;
+        private final Integer minor;
+        private final Integer subminor;
+        private final Integer update;
+
+        private Version(String version) {
+            // split java version into it's constituent parts, i.e.
+            // 1.2.3.4 -> [ 1, 2, 3, 4]
+            // 1.2.3u4 -> [ 1, 2, 3, 4]
+            // 1.2.3_4 -> [ 1, 2, 3, 4]
+            
+            if (version.contains("-")) {
+                String[] versionSplit = version.split("-");
+                vendor = versionSplit.length > 0 ? versionSplit[0] : null;
+                version = versionSplit.length > 1 ? versionSplit[1] : "";
+            } else {
+                vendor = null;
+            }
+            
+            String[] split = version.split("[\\._u\\-]+");
+
+            major = split.length > 0 ? Integer.parseInt(split[0]) : 0;
+            minor = split.length > 1 ? Integer.parseInt(split[1]) : null;
+            subminor = split.length > 2 ? Integer.parseInt(split[2]) : null;
+            update = split.length > 3 ? Integer.parseInt(split[3]) : null;
+        }
+
+        private Version() {
+            vendor = JDK.vendor;
+            major = JDK.major;
+            minor = JDK.minor;
+            subminor = JDK.subminor;
+            update = JDK.update;
+        }
+
+        public boolean newerThan(Version version) {
+            if (major > version.major) {
                 return true;
-            } else if (minor == version.getMinor()) {
-                if (subminor > version.getSubMinor()) {
+            } else if (major == version.major) {
+                if (greaterThan(minor, version.minor)) {
                     return true;
-                } else if (subminor == version.getSubMinor()) {
-                    if (update > version.getUpdate()) {
+                } else if (equals(minor, version.minor)) {
+                    if (greaterThan(subminor, version.subminor)) {
                         return true;
+                    } else if (equals(subminor, version.subminor)) {
+                        if (greaterThan(update, version.update)) {
+                            return true;
+                        }
                     }
                 }
             }
+
+            return false;
         }
 
-        return false;
+       public boolean olderThan(Version version) {
+            if (major < version.major) {
+                return true;
+            } else if (major == version.major) {
+                if (lessThan(minor, version.minor)) {
+                    return true;
+                } else if (equals(minor, version.minor)) {
+                    if (lessThan(subminor, version.subminor)) {
+                        return true;
+                    } else if (equals(subminor, version.subminor)) {
+                        if (lessThan(update, version.update)) {
+                            return true;
+                        }
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static boolean greaterThan(Integer leftHandSide, Integer rightHandSide) {
+            return (leftHandSide == null ? 0 : leftHandSide) > (rightHandSide == null ? 0 : rightHandSide);
+        }
+
+        private static boolean lessThan(Integer leftHandSide, Integer rightHandSide) {
+            return (leftHandSide == null ? 0 : leftHandSide) < (rightHandSide == null ? 0 : rightHandSide);
+        }
+
+        /**
+         * if either left-hand-side or right-hand-side is empty, it is equals
+         *
+         * @param leftHandSide
+         * @param rightHandSide
+         * @return true if equals, otherwise false
+         */
+        private static boolean equals(Integer leftHandSide, Integer rightHandSide) {
+
+            if (leftHandSide == null || rightHandSide == null) {
+                return true;
+            }
+            return leftHandSide.equals(rightHandSide);
+        }
+
+        @Override
+        public int hashCode() {
+            int hash = 3;
+            hash = 61 * hash + this.major;
+            hash = 61 * hash + (this.minor == null ? 0 : this.minor);
+            hash = 61 * hash + (this.subminor == null ? 0 : this.subminor);
+            hash = 61 * hash + (this.update == null ? 0 : this.update);
+            return hash;
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj) {
+                return true;
+            }
+            if (obj == null) {
+                return false;
+            }
+            if (getClass() != obj.getClass()) {
+                return false;
+            }
+            final Version other = (Version) obj;
+            if (this.major != other.major) {
+                return false;
+            }
+            if (!equals(this.minor, other.minor)) {
+                return false;
+            }
+            if (!equals(this.subminor, other.subminor)) {
+                return false;
+            }
+            if (!equals(this.update, other.update)) {
+                return false;
+            }
+            return true;
+        }
+
+        public boolean newerOrEquals(Version version) {
+            return newerThan(version) || equals(version);
+        }
+
+        public boolean olderOrEquals(Version version) {
+            return olderThan(version) || equals(version);
+        }
+
+        @Override
+        public String toString() {
+            StringBuilder sb = new StringBuilder(10);
+            sb.append(major);
+            if (minor != null) {
+                sb.append('.').append(minor);
+            }
+            if (subminor != null) {
+                sb.append('.').append(subminor);
+            }
+            if (update != null) {
+                sb.append('.').append(update);
+            }
+            return sb.toString();
+        }
     }
 
-    public boolean newerOrEquals(JDK version) {
-        return newerThan(version) || equals(version);
+    public static Version getVersion(String string) {
+        if (string != null && string.matches("([0-9]+[\\._u\\-]+)*[0-9]+")) {
+            // make sure the string is a valid JDK version, i.e.
+            // 1.8.0_162 or something that is returned by "java -version"
+            return new Version(string);
+        } else {
+            return null;
+        }
     }
 
-    public boolean olderThan(JDK version) {
-        return !newerOrEquals(version);
+    public static Version getVersion() {
+        return new Version();
     }
 
-    public boolean olderOrEquals(JDK version) {
-        return !newerThan(version);
+    public static boolean isCorrectJDK(Version minVersion, Version maxVersion) {
+        return isCorrectJDK(JDK_VERSION, minVersion, maxVersion);
+    }
+    
+    public static boolean isCorrectJDK(Version reference, Version minVersion, Version maxVersion) {
+        return isCorrectJDK(reference, null, minVersion, maxVersion);
+    }
+
+    /**
+     * Check if the reference version falls between the minVersion and maxVersion.
+     *
+     * @param reference The version to compare; falls back to the current JDK version if empty.
+     * @param minVersion The inclusive minimum version.
+     * @param maxVersion The inclusive maximum version.
+     * @return true if within the version range, false otherwise
+     */
+    public static boolean isCorrectJDK(Version reference, String vendor, Version minVersion, Version maxVersion) {
+        Version version = reference == null ? JDK_VERSION : reference;
+        boolean correctJDK = true;
+      
+        if (reference == null) {
+            version = JDK_VERSION;
+        }
+
+        if (vendor != null) {
+            correctJDK = JDK.vendor.contains(vendor);
+        }
+
+        if (correctJDK && minVersion != null) {
+            correctJDK = version.newerOrEquals(minVersion);
+        }
+        
+        if (correctJDK && maxVersion != null) {
+            correctJDK = version.olderOrEquals(maxVersion);
+        }
+        
+        return correctJDK;
     }
 
     /**
@@ -151,13 +313,17 @@ public final class JDK {
     private static int minor;
     private static int subminor;
     private static int update;
+    private static String vendor;
+    private static Version JDK_VERSION;
 
     // silently fall back to ridiculous defaults if something is crazily wrong...
     private static void initialize() {
         major = 1;
         minor = subminor = update = 0;
         try {
-            String jv = System.getProperty("java.version");
+            String javaVersion = System.getProperty("java.version");
+            vendor = System.getProperty("java.vendor");
+       
             /*In JEP 223 java.specification.version will be a single number versioning , not a dotted versioning . So if we get a single
             integer as versioning we know that the JDK is post JEP 223
             For JDK 8:
@@ -171,7 +337,7 @@ public final class JDK {
             String[] jsvSplit = javaSpecificationVersion.split("\\.");
             if (jsvSplit.length == 1) {
                 //This is handle Early Access build .Example 9-ea
-                String[] jvSplit = jv.split("-");
+                String[] jvSplit = javaVersion.split("-");
                 String jvReal = jvSplit[0];
                 String[] split = jvReal.split("[\\.]+");
 
@@ -190,10 +356,10 @@ public final class JDK {
                     }
                 }
             } else {
-                if (!StringUtils.ok(jv))
+                if (!StringUtils.ok(javaVersion))
                     return; // not likely!!
 
-                String[] ss = jv.split("\\.");
+                String[] ss = javaVersion.split("\\.");
 
                 if (ss.length < 3 || !ss[0].equals("1"))
                     return;
@@ -214,5 +380,7 @@ public final class JDK {
         catch(Exception e) {
             // ignore -- use defaults
         }
+
+        JDK_VERSION = new Version();
     }
 }

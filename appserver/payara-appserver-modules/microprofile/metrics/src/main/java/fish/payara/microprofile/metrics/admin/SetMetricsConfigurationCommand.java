@@ -40,25 +40,21 @@
 package fish.payara.microprofile.metrics.admin;
 
 import com.sun.enterprise.config.serverbeans.Config;
-import com.sun.enterprise.config.serverbeans.Domain;
 import fish.payara.microprofile.SetSecureMicroprofileConfigurationCommand;
 import fish.payara.microprofile.metrics.MetricsService;
 import java.util.logging.Logger;
 import javax.inject.Inject;
 import javax.security.auth.Subject;
 import org.glassfish.api.ActionReport;
+import org.glassfish.api.I18n;
 import org.glassfish.api.Param;
 import org.glassfish.api.admin.AdminCommandContext;
+import org.glassfish.api.admin.CommandLock;
 import org.glassfish.api.admin.ExecuteOn;
 import org.glassfish.api.admin.RestEndpoint;
-import static org.glassfish.api.admin.RestEndpoint.OpType.POST;
 import org.glassfish.api.admin.RestEndpoints;
 import org.glassfish.api.admin.RuntimeType;
-import static org.glassfish.config.support.CommandTarget.CLUSTER;
-import static org.glassfish.config.support.CommandTarget.CLUSTERED_INSTANCE;
-import static org.glassfish.config.support.CommandTarget.CONFIG;
-import static org.glassfish.config.support.CommandTarget.DAS;
-import static org.glassfish.config.support.CommandTarget.STANDALONE_INSTANCE;
+import org.glassfish.config.support.CommandTarget;
 import org.glassfish.config.support.TargetType;
 import org.glassfish.hk2.api.PerLookup;
 import org.glassfish.internal.api.Globals;
@@ -72,14 +68,16 @@ import org.jvnet.hk2.config.TransactionFailure;
  *
  * @author Gaurav Gupta
  */
+
+@ExecuteOn({RuntimeType.DAS, RuntimeType.INSTANCE})
+@TargetType(value = {CommandTarget.DAS, CommandTarget.STANDALONE_INSTANCE, CommandTarget.CLUSTER, CommandTarget.CONFIG})
 @Service(name = "set-metrics-configuration")
+@CommandLock(CommandLock.LockType.NONE)
 @PerLookup
-@ExecuteOn({RuntimeType.DAS})
-@TargetType({DAS, STANDALONE_INSTANCE, CLUSTER, CLUSTERED_INSTANCE, CONFIG})
+@I18n("set-metrics-configuration")
 @RestEndpoints({
     @RestEndpoint(configBean = MetricsServiceConfiguration.class,
-            opType = POST,
-            path = "set-metrics-configuration",
+            opType = RestEndpoint.OpType.POST,
             description = "Sets the Metrics Configuration")
 })
 public class SetMetricsConfigurationCommand extends SetSecureMicroprofileConfigurationCommand {
@@ -105,9 +103,6 @@ public class SetMetricsConfigurationCommand extends SetSecureMicroprofileConfigu
     @Param(name = "virtualServers", optional = true)
     private String virtualServers;
 
-    @Inject
-    private Domain domain;
-
     @Override
     public void execute(AdminCommandContext context) {
         ActionReport actionReport = context.getActionReport();
@@ -132,51 +127,43 @@ public class SetMetricsConfigurationCommand extends SetSecureMicroprofileConfigu
 
         try {
             ConfigSupport.apply(configProxy -> {
-                boolean restart = false;
                 if (dynamic != null) {
                     configProxy.setDynamic(dynamic.toString());
                 }
                 if (enabled != null) {
                     configProxy.setEnabled(enabled.toString());
-                    if ((dynamic != null && dynamic)
-                            || Boolean.valueOf(metricsConfiguration.getDynamic())) {
+                    if(dynamic != null && dynamic || Boolean.valueOf(metricsConfiguration.getDynamic())) {
                         metricsService.resetMetricsEnabledProperty();
-                    } else {
-                        restart = true;
                     }
                 }
                 if (secure != null) {
                     actionReport.setMessage("--secureMetrics option is deprecated, replaced by --securityEnabled option.");
                     configProxy.setSecureMetrics(secure.toString());
-                    if ((dynamic != null && dynamic)
-                            || Boolean.valueOf(metricsConfiguration.getDynamic())) {
+                    if(dynamic != null && dynamic || Boolean.valueOf(metricsConfiguration.getDynamic())) {
                         metricsService.resetMetricsSecureProperty();
-                    } else {
-                        restart = true;
                     }
                 }
                 if (endpoint != null) {
                     configProxy.setEndpoint(endpoint);
-                    restart = true;
                 }
                 if (virtualServers != null) {
                     configProxy.setVirtualServers(virtualServers);
-                    restart = true;
                 }
                 if (securityEnabled != null) {
                     configProxy.setSecurityEnabled(securityEnabled.toString());
-                    restart = true;
                 }
                 if (roles != null) {
                     configProxy.setRoles(roles);
-                    restart = true;
                 }
 
-                if (restart) {
-                    actionReport.setMessage("Restart server for change to take effect");
-                }
+                actionReport.setActionExitCode(ActionReport.ExitCode.SUCCESS);
                 return configProxy;
             }, metricsConfiguration);
+            
+            if(metricsConfiguration != null && !Boolean.valueOf(metricsConfiguration.getDynamic())) {
+                actionReport.setMessage("Restart server for change to take effect");
+            }
+
         } catch (TransactionFailure ex) {
             actionReport.failure(LOGGER, "Failed to update Metrics configuration", ex);
         }
@@ -186,6 +173,5 @@ public class SetMetricsConfigurationCommand extends SetSecureMicroprofileConfigu
             actionReport.getSubActionsReport().clear();
         }
     }
-
 
 }

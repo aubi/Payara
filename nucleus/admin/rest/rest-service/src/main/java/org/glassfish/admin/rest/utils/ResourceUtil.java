@@ -38,11 +38,12 @@
  * holder.
  */
  
-// Portions Copyright [2016] [Payara Foundation and/or its affiliates]
+// Portions Copyright [2016-2019] [Payara Foundation and/or its affiliates]
 package org.glassfish.admin.rest.utils;
 
 import com.sun.enterprise.config.serverbeans.Config;
 import com.sun.enterprise.config.serverbeans.Domain;
+import com.sun.enterprise.universal.xml.MiniXmlParser.JvmOption;
 import fish.payara.asadmin.recorder.AsadminRecorderService;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -61,7 +62,6 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Map.Entry;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
@@ -81,11 +81,7 @@ import org.glassfish.admin.rest.generator.CommandResourceMetaData;
 import org.glassfish.admin.rest.provider.MethodMetaData;
 import org.glassfish.admin.rest.provider.ParameterMetaData;
 import org.glassfish.admin.rest.provider.ProviderUtil;
-import static org.glassfish.admin.rest.provider.ProviderUtil.getElementLink;
 import org.glassfish.admin.rest.results.ActionReportResult;
-import static org.glassfish.admin.rest.utils.Util.eleminateHypen;
-import static org.glassfish.admin.rest.utils.Util.getHtml;
-import static org.glassfish.admin.rest.utils.Util.methodNameFromDtdName;
 import org.glassfish.admin.rest.utils.xml.RestActionReporter;
 import org.glassfish.admin.restconnector.RestConfig;
 import org.glassfish.api.ActionReport;
@@ -105,12 +101,16 @@ import org.glassfish.internal.api.Globals;
 import org.glassfish.jersey.media.sse.EventOutput;
 import org.glassfish.security.services.api.authorization.AuthorizationService;
 import org.glassfish.security.services.common.PrivilegedLookup;
-
 import org.jvnet.hk2.config.Attribute;
 import org.jvnet.hk2.config.ConfigBeanProxy;
 import org.jvnet.hk2.config.ConfigModel;
 import org.jvnet.hk2.config.Dom;
 import org.jvnet.hk2.config.DomDocument;
+
+import static org.glassfish.admin.rest.provider.ProviderUtil.getElementLink;
+import static org.glassfish.admin.rest.utils.Util.eleminateHypen;
+import static org.glassfish.admin.rest.utils.Util.getHtml;
+import static org.glassfish.admin.rest.utils.Util.methodNameFromDtdName;
 
 /**
  * Resource utilities class. Used by resource templates,
@@ -1188,7 +1188,7 @@ public class ResourceUtil {
         return authorizationSvc.isAuthorized(subject, new URI("admin", resource, null), action);
     }
 
-    /**
+/**
      * Creates a new rearranged map of JVM options. Options {@code target} and {@code profiler} are forwarded 1:1. All
      * other options are joined in the result map for key {@code id} and are separated by semi-colon.
      *
@@ -1203,10 +1203,12 @@ public class ResourceUtil {
      * independent of whether the value was extracted from the input key or input value.
      *
      * @param jvmOptions       a set of jvm options given as key-value pairs, keys are allowed to contain values too
+     * @param removeVersioning set {@code true} to erase any JVM version prefix from the keys, {@code false} to keep
+     *                         keys as they are.
      * @return a map where most options are joined into one expression for key {@code id}. If existing {@code target}
      *         and {@code profiler} keys are kept same as in input map.
      */
-    public static Map<String, String> processJvmOptions(Map<String, String> jvmOptions) {
+    public static Map<String, String> processJvmOptions(Map<String, String> jvmOptions, boolean removeVersioning) {
         Map<String, String> results = new HashMap<>();
         StringBuilder options = new StringBuilder();
         String sep = "";
@@ -1225,7 +1227,7 @@ public class ResourceUtil {
                     key = key.substring(0, key.length() - 1);
                 }
                 options.append(sep);
-                options.append(key);
+                options.append(removeVersioning ? new JvmOption(key).option : key);
                 if (value == null || value.trim().isEmpty()) {
                     value = option.getValue();
                 }

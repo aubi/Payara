@@ -37,23 +37,23 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright [2019] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.configapi.tests;
 
-import org.junit.Test;
-import org.junit.Assert;
-import org.jvnet.hk2.config.ConfigSupport;
-import org.jvnet.hk2.config.ConfigBean;
-import org.jvnet.hk2.config.TransactionFailure;
-import org.jvnet.hk2.config.SingleConfigCode;
+import com.sun.enterprise.config.serverbeans.JavaConfig;
+import java.beans.PropertyVetoException;
+import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.tests.utils.Utils;
-import com.sun.enterprise.config.serverbeans.JavaConfig;
-
-import java.util.logging.Logger;
-import java.util.logging.Level;
-import java.util.List;
-import java.beans.PropertyVetoException;
+import org.junit.Assert;
+import org.junit.Test;
+import org.jvnet.hk2.config.ConfigBean;
+import org.jvnet.hk2.config.ConfigSupport;
+import org.jvnet.hk2.config.SingleConfigCode;
+import org.jvnet.hk2.config.TransactionFailure;
 
 /**
  * User: Jerome Dochez
@@ -111,7 +111,7 @@ public class JavaConfigSubTypesTest extends ConfigPersistence {
 
         ConfigSupport.apply(new SingleConfigCode<JavaConfig>() {
             public Object run(JavaConfig param) throws PropertyVetoException, TransactionFailure {
-                List<String> jvmOptions = param.getJvmOptions();
+                List<String> jvmOptions = param.getJvmRawOptions();
                 jvmOptions.add("-XFooBar=true");
                 return jvmOptions;
             }
