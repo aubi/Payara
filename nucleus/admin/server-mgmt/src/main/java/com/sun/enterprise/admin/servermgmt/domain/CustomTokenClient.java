@@ -101,7 +101,11 @@ public class CustomTokenClient {
                 // Check presence of token place-holder
                 Set<Integer> usedPorts = new HashSet<Integer>();
                 Properties domainProps = domainConfig.getDomainProperties();
-                String portBase = (String)domainConfig.get(DomainConfig.K_PORTBASE);
+                String portBase = (String) domainConfig.get(DomainConfig.K_PORTBASE);
+                boolean checkPorts = true;
+                if (domainConfig.containsKey(DomainConfig.K_VALIDATE_PORTS)) {
+                    checkPorts = (Boolean) domainConfig.get(DomainConfig.K_VALIDATE_PORTS);
+                }
 
                 Map<String, String> filePaths = new HashMap<String, String>(3, 1);
                 filePaths.put(SystemPropertyConstants.INSTALL_ROOT_PROPERTY, System.getProperty(SystemPropertyConstants.INSTALL_ROOT_PROPERTY));
@@ -119,7 +123,7 @@ public class CustomTokenClient {
                             Integer port = null;
                             if (domainProps.containsKey(name)) {
                                 port = Integer.valueOf(domainProps.getProperty(token.getName()));
-                                if (!NetUtils.isPortFree(port)) {
+                                if (checkPorts && !NetUtils.isPortFree(port)) {
                                     throw new DomainException(_strings.get("unavailablePort", port));
                                 }
                             } else {
