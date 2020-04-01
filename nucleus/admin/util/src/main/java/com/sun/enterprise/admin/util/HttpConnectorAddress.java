@@ -38,31 +38,38 @@
  * holder.
  */
 
-// Portions Copyright [2016-2018] [Payara Foundation and/or its affiliates]
+// Portions Copyright [2016-2019] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.admin.util;
 
-import java.io.IOException;
-import java.net.URL;
-import java.net.MalformedURLException;
-import java.net.URLConnection;
 import com.sun.enterprise.universal.GFBase64Encoder;
+import com.sun.enterprise.util.JDK;
+import java.io.IOException;
+import java.net.MalformedURLException;
+import java.net.URL;
+import java.net.URLConnection;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
-import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 
+import static org.glassfish.grizzly.config.dom.Ssl.TLS1;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS11;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS12;
+import static org.glassfish.grizzly.config.dom.Ssl.TLS13;
 
 public final class HttpConnectorAddress {
     static final String HTTP_CONNECTOR = "http";
     static final String HTTPS_CONNECTOR = "https";
     public static final String  AUTHORIZATION_KEY     = "Authorization";
     private static final String AUTHORIZATION_TYPE = "Basic ";
-    private static final String DEFAULT_PROTOCOL = "TLSv1.2";
+    private static final String DEFAULT_PROTOCOL = TLS12;
+    private static final String ZULU_JDK_VENDOR = "Azul";
+    private static final int MINIMUM_UPDATE_VERSION = 222;
 
     private String host;
     private int    port;
@@ -178,23 +185,37 @@ public final class HttpConnectorAddress {
                 String clientHttpsProtocol = System.getProperty("fish.payara.clientHttpsProtocol");
                 if (clientHttpsProtocol != null) {
                     switch (clientHttpsProtocol) {
-                        case "TLSv1": protocol = "TLSV1";
+                        case TLS1: protocol = TLS1;
                                         logger.log(Level.FINE, 
                                                 AdminLoggerInfo.settingHttpsProtocol,
                                                 protocol);
                                         break;
                         
-                        case "TLSv1.1": protocol = "TLSv1.1";
+                        case TLS11: protocol = TLS11;
                                         logger.log(Level.FINE, 
                                                 AdminLoggerInfo.settingHttpsProtocol,
                                                 protocol);
                                         break;
                                         
-                        case "TLSv1.2": protocol = "TLSv1.2";
-                                        logger.log(Level.FINE, 
+                        case TLS12: protocol = TLS12;
+                                        logger.log(Level.FINE,
                                                 AdminLoggerInfo.settingHttpsProtocol,
                                                 protocol);
                                         break;
+
+                        case TLS13:
+                            
+                            if (!JDK.getVendor().contains(ZULU_JDK_VENDOR) && JDK.getUpdate() >= MINIMUM_UPDATE_VERSION) {
+                                protocol = TLS13;
+                            } else {
+
+                                protocol = DEFAULT_PROTOCOL;
+                            }
+                            
+                            logger.log(Level.FINE,
+                                    AdminLoggerInfo.settingHttpsProtocol,
+                                    protocol);
+                            break;
                         
                         default:        protocol = DEFAULT_PROTOCOL;
                                         String[] logParams = {protocol, clientHttpsProtocol};

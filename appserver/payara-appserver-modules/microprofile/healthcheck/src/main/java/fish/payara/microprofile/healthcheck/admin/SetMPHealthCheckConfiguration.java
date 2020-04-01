@@ -42,7 +42,6 @@ d *  See the License for the specific
 package fish.payara.microprofile.healthcheck.admin;
 
 import com.sun.enterprise.config.serverbeans.Config;
-import com.sun.enterprise.config.serverbeans.Domain;
 import fish.payara.microprofile.SetSecureMicroprofileConfigurationCommand;
 import fish.payara.microprofile.healthcheck.config.MetricsHealthCheckConfiguration;
 import java.beans.PropertyVetoException;
@@ -61,9 +60,7 @@ import org.glassfish.api.admin.RuntimeType;
 import org.glassfish.config.support.CommandTarget;
 import org.glassfish.config.support.TargetType;
 import org.glassfish.hk2.api.PerLookup;
-import org.glassfish.hk2.api.ServiceLocator;
 import org.glassfish.internal.api.Target;
-import org.glassfish.internal.config.UnprocessedConfigListener;
 import org.jvnet.hk2.annotations.Service;
 import org.jvnet.hk2.config.ConfigSupport;
 import org.jvnet.hk2.config.SingleConfigCode;
@@ -99,16 +96,7 @@ public class SetMPHealthCheckConfiguration extends SetSecureMicroprofileConfigur
     private String virtualServers;
 
     @Inject
-    ServiceLocator habitat;
-
-    @Inject
     private Target targetUtil;
-
-    @Inject
-    UnprocessedConfigListener unprocessedListener;
-
-    @Inject
-    private Domain domain;
 
     @Override
     public void execute(AdminCommandContext context) {

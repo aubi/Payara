@@ -38,6 +38,8 @@
  * holder.
  */
 
+// Portions Copyright [2019] Payara Foundation and/or affiliates
+
 /*
  * UtilHandlers.java
  *
@@ -49,10 +51,7 @@
 
 package org.glassfish.admingui.common.handlers;
 
-import org.glassfish.admingui.common.util.GuiUtil;
-import org.glassfish.admingui.common.util.JSONUtil;
-import org.glassfish.admingui.common.util.RestUtil;
-
+import com.sun.enterprise.util.JDK;
 import com.sun.jsftemplating.annotation.Handler;
 import com.sun.jsftemplating.annotation.HandlerInput;
 import com.sun.jsftemplating.annotation.HandlerOutput;
@@ -62,7 +61,6 @@ import com.sun.jsftemplating.layout.descriptors.LayoutElement;
 import com.sun.jsftemplating.layout.descriptors.handler.HandlerContext;
 import com.sun.jsftemplating.layout.descriptors.handler.HandlerDefinition;
 import com.sun.jsftemplating.util.FileUtil;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.UnsupportedEncodingException;
@@ -77,12 +75,14 @@ import java.util.Collections;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
-import java.util.Map;
 import java.util.logging.Level;
-
 import javax.faces.component.UIViewRoot;
+import org.glassfish.admingui.common.util.GuiUtil;
+import org.glassfish.admingui.common.util.JSONUtil;
+import org.glassfish.admingui.common.util.RestUtil;
 
 /**
  *
@@ -1163,6 +1163,22 @@ public class UtilHandlers {
             ch = it.next();
         }
         return builder.toString();
+    }
+    
+    @Handler(id = "py.getJavaVendor",
+            output = {
+                @HandlerOutput(name = "javaVendor", type=String.class)}
+    )
+    public static void getJavaVendor(HandlerContext handlerCtx) {
+       handlerCtx.setOutputValue("javaVendor", JDK.getVendor());
+    }
+    
+    @Handler(id = "py.getJdkUpdateVersion",
+            output = {
+                @HandlerOutput(name = "jdkUpdateVersion", type = String.class)}
+    )
+    public static void getJdkUpdateVersion(HandlerContext handlerCtx) {
+        handlerCtx.setOutputValue("jdkUpdateVersion", JDK.getUpdate());
     }
 
     private static final String PATH_SEPARATOR = "${path.separator}";

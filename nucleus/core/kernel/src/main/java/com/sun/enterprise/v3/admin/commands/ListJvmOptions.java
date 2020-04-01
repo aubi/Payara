@@ -37,14 +37,18 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright [2019] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.v3.admin.commands;
 
 import com.sun.enterprise.config.serverbeans.Config;
 import com.sun.enterprise.config.serverbeans.Domain;
 import com.sun.enterprise.config.serverbeans.JavaConfig;
+import com.sun.enterprise.universal.xml.MiniXmlParser.JvmOption;
+import com.sun.enterprise.util.JDK;
 import com.sun.enterprise.util.SystemPropertyConstants;
 import com.sun.enterprise.util.i18n.StringManager;
+import java.util.ArrayList;
 import java.util.List;
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -104,22 +108,53 @@ public final class ListJvmOptions implements AdminCommand, AdminCommandSecurity.
     
     public void execute(AdminCommandContext context) {
         final ActionReport report = context.getActionReport();
-        List<String> opts;
+        List<JvmOption> opts = new ArrayList<>();
         if (profiler) {
-                if (jc.getProfiler() == null) {
-                    report.setMessage(lsm.getString("create.profiler.first"));
-                    report.setActionExitCode(ActionReport.ExitCode.FAILURE);
-                    return;
-                }
-            opts = jc.getProfiler().getJvmOptions();
-        } else
-            opts = jc.getJvmOptions();
-        //Collections.sort(opts); //sorting is garbled by Reporter anyway, so let's move sorting to the client side
-        try {
-            for (String option : opts) {
-                ActionReport.MessagePart part = report.getTopMessagePart().addChild();
-                part.setMessage(option);
+            if (jc.getProfiler() == null) {
+                report.setMessage(lsm.getString("create.profiler.first"));
+                report.setActionExitCode(ActionReport.ExitCode.FAILURE);
+                return;
             }
+
+            for (String jvmOption : jc.getProfiler().getJvmOptions()) {
+                opts.add(new JvmOption(jvmOption));
+            }
+        } else {
+            for (String jvmOption : jc.getJvmRawOptions()) {
+                opts.add(new JvmOption(jvmOption));
+            }
+        }
+        try {
+            for (JvmOption jvmOption : opts) {
+                ActionReport.MessagePart part = report.getTopMessagePart().addChild();
+                StringBuilder sb = new StringBuilder();
+                sb.append(jvmOption.option);
+                if (jvmOption.minVersion != null || jvmOption.maxVersion != null) {
+                    sb.append("   --> JDK versions: ");
+                }
+
+                if (jvmOption.minVersion != null) {
+                    sb.append("min(");
+                    sb.append(jvmOption.minVersion);
+                    sb.append(")");
+                }
+
+                if (jvmOption.maxVersion != null) {
+                    if (jvmOption.minVersion != null) {
+                        sb.append(", ");
+                    }
+                    sb.append("max(");
+                    sb.append(jvmOption.maxVersion);
+                    sb.append(")");
+                }
+
+                if (!JDK.isCorrectJDK(jvmOption.minVersion, jvmOption.maxVersion)) {
+                    sb.append(" (Inactive on this JDK)");
+                }
+
+                part.setMessage(sb.toString());
+            }
+
         } catch (Exception e) {
             report.setMessage(lsm.getStringWithDefault("list.jvm.options.failed",
                     "Command: list-jvm-options failed"));

@@ -37,23 +37,26 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+// Portions Copyright [2019] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.config.serverbeans;
 
-import org.jvnet.hk2.config.Element;
-import org.jvnet.hk2.config.DuckTyped;
-import org.jvnet.hk2.config.ConfigBeanProxy;
-import org.jvnet.hk2.config.types.PropertyBag; //used only for Javadoc purpose {@link}
-import java.util.List;
+import com.sun.enterprise.universal.xml.MiniXmlParser.JvmOption;
 import java.beans.PropertyVetoException;
+import java.util.ArrayList;
+import java.util.List;
+import org.jvnet.hk2.config.ConfigBeanProxy;
+import org.jvnet.hk2.config.DuckTyped;
+import org.jvnet.hk2.config.Element;
+import org.jvnet.hk2.config.types.PropertyBag;
 
 /** Factored out the list of jvm-options from at least two other interfaces that have them: java-config and profiler.
  *  Similar to {@link PropertyBag}
  */
 public interface JvmOptionBag extends ConfigBeanProxy {
-    @Element
+    @DuckTyped
     public List<String> getJvmOptions();
-
+    @Element("jvm-options")
     void setJvmOptions(List<String> options) throws PropertyVetoException;
 
     /** It's observed that many a time we need the value of max heap size. This is useful when deciding if a
@@ -78,6 +81,16 @@ public interface JvmOptionBag extends ConfigBeanProxy {
     String getStartingWith(String start);
 
     class Duck {
+
+        public static List<String> getJvmOptions(JvmOptionBag me) {
+            List<String> jvmOptions = new ArrayList<>();
+
+            for (String option : me.getJvmRawOptions()) {
+                JvmOption jvmOption = new JvmOption(option);
+                jvmOptions.add(jvmOption.option);
+            }
+            return jvmOptions;
+        }
      /* Note: It does not take defaults into account. Also,
      * I have tested that server does not start with a heap that is less than 1m, so I think I don't have to worry about
      * -Xmx that is specified to be less than 1 MB. Again, there is lots and lots of platform dependent code here,
@@ -144,4 +157,7 @@ public interface JvmOptionBag extends ConfigBeanProxy {
             return null;
         }
     }
+
+    @Element("jvm-options")
+    List<String> getJvmRawOptions();
 }

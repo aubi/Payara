@@ -40,6 +40,8 @@
 
 -->
 
+<!-- Portions Copyright [2019] Payara Foundation and/or affiliates -->
+
 <!-- javaConfig/javaConfigTabs.inc -->
 
 

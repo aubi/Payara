@@ -45,7 +45,7 @@
     <parent>
         <groupId>org.glassfish.main.appclient</groupId>
         <artifactId>client</artifactId>
-        <version>4.1.2.191.10</version>
+        <version>4.1.2.191.11</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>gf-client-module</artifactId>
@@ -408,6 +408,10 @@
      </dependency>
 
      <!-- end of endorsed JAR dependencies -->
+     <dependency>
+         <groupId>javax.json.bind</groupId>
+         <artifactId>javax.json.bind-api</artifactId>
+     </dependency>
 
      <!-- JAXR -JSR-93 Support-->
      <dependency>

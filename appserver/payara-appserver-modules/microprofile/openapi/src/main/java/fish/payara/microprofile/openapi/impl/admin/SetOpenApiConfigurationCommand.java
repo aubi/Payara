@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) [2018] Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) [2018-2019] Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
@@ -87,6 +87,9 @@ public class SetOpenApiConfigurationCommand extends SetSecureMicroprofileConfigu
     @Param(name = "virtualServers", optional = true)
     private String virtualServers;
 
+    @Param(name = "corsHeaders", optional = true, defaultValue = "false")
+    private Boolean corsHeaders;
+
     @Inject
     private Domain domain;
 
@@ -124,6 +127,9 @@ public class SetOpenApiConfigurationCommand extends SetSecureMicroprofileConfigu
                 }
                 if (virtualServers != null) {
                     configProxy.setVirtualServers(virtualServers);
+                }
+                if (corsHeaders != null) {
+                    configProxy.setCorsHeaders(Boolean.toString(corsHeaders));
                 }
                 if (securityEnabled != null) {
                     configProxy.setSecurityEnabled(securityEnabled.toString());
