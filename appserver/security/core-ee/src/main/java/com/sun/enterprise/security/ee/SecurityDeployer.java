@@ -37,48 +37,54 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-// Portions Copyright [2016-2017] [Payara Foundation and/or its affiliates]
+// Portions Copyright [2016-2020] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.security.ee;
 
+import com.sun.enterprise.deployment.Application;
+import com.sun.enterprise.deployment.EjbBundleDescriptor;
+import com.sun.enterprise.deployment.WebBundleDescriptor;
+import com.sun.enterprise.deployment.web.LoginConfiguration;
 import com.sun.enterprise.security.AppCNonceCacheMap;
 import com.sun.enterprise.security.CNonceCacheFactory;
 import com.sun.enterprise.security.EjbSecurityPolicyProbeProvider;
+import com.sun.enterprise.security.SecurityLifecycle;
 import com.sun.enterprise.security.WebSecurityDeployerProbeProvider;
-import org.glassfish.security.common.CNonceCache;
-import org.glassfish.security.common.HAUtil;
-import com.sun.enterprise.security.web.integration.WebSecurityManagerFactory;
-import com.sun.enterprise.security.web.integration.WebSecurityManager;
-import org.glassfish.api.deployment.DeploymentContext;
-import org.glassfish.api.deployment.MetaData;
-import org.glassfish.api.deployment.OpsParams;
-import org.glassfish.deployment.common.DeploymentException;
-import org.glassfish.deployment.common.SimpleDeployer;
-import org.glassfish.deployment.common.DummyApplication;
-import com.sun.enterprise.deployment.WebBundleDescriptor;
-import com.sun.enterprise.deployment.EjbBundleDescriptor;
-import com.sun.enterprise.deployment.Application;
 import com.sun.enterprise.security.util.IASSecurityException;
-import org.glassfish.internal.api.ServerContext;
+import com.sun.enterprise.security.web.integration.WebSecurityManager;
+import com.sun.enterprise.security.web.integration.WebSecurityManagerFactory;
 import com.sun.logging.LogDomains;
-import java.util.*;
+
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import java.util.Set;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-import org.glassfish.api.deployment.DeployCommandParameters;
-import org.glassfish.api.event.EventListener;
-import org.glassfish.api.event.EventTypes;
-import org.glassfish.api.event.Events;
-import org.glassfish.internal.deployment.Deployment;
-import org.jvnet.hk2.annotations.Service;
-import org.glassfish.hk2.api.PostConstruct;
-import org.glassfish.internal.data.ApplicationInfo;
-import org.glassfish.api.invocation.RegisteredComponentInvocationHandler;
-import org.glassfish.internal.data.ModuleInfo;
-import com.sun.enterprise.deployment.web.LoginConfiguration;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import javax.inject.Provider;
+
+import org.glassfish.api.deployment.DeployCommandParameters;
+import org.glassfish.api.deployment.DeploymentContext;
+import org.glassfish.api.deployment.MetaData;
+import org.glassfish.api.deployment.OpsParams;
+import org.glassfish.api.event.EventListener;
+import org.glassfish.api.event.EventTypes;
+import org.glassfish.api.event.Events;
+import org.glassfish.api.invocation.RegisteredComponentInvocationHandler;
+import org.glassfish.deployment.common.DeploymentException;
+import org.glassfish.deployment.common.DummyApplication;
+import org.glassfish.deployment.common.SimpleDeployer;
+import org.glassfish.hk2.api.PostConstruct;
+import org.glassfish.internal.api.ServerContext;
+import org.glassfish.internal.data.ApplicationInfo;
+import org.glassfish.internal.data.ModuleInfo;
+import org.glassfish.internal.deployment.Deployment;
+import org.glassfish.security.common.CNonceCache;
+import org.glassfish.security.common.HAUtil;
+import org.jvnet.hk2.annotations.Service;
 
 /**
  * Security Deployer which generate and clean the security policies
@@ -88,6 +94,12 @@ import javax.inject.Provider;
 public class SecurityDeployer extends SimpleDeployer<SecurityContainer, DummyApplication> implements PostConstruct {
 
     private static final Logger _logger = LogDomains.getLogger(SecurityDeployer.class, LogDomains.SECURITY_LOGGER);
+
+    // must be already set before using this service.
+    @SuppressWarnings("unused")
+    @Inject
+    private SecurityLifecycle securityLifecycle;
+
     @Inject
     private ServerContext serverContext;
 
@@ -123,6 +135,7 @@ public class SecurityDeployer extends SimpleDeployer<SecurityContainer, DummyApp
 
     private class AppDeployEventListener implements EventListener {
 
+        @Override
         public void event(Event event) {
             Application app = null;
             if (Deployment.MODULE_LOADED.equals(event.type())) {
@@ -156,7 +169,7 @@ public class SecurityDeployer extends SimpleDeployer<SecurityContainer, DummyApp
                 commitPolicy((WebBundleDescriptor) event.hook());
             }
         }
-    };
+    }
 
     // creates security policy if needed
     @Override
@@ -261,7 +274,7 @@ public class SecurityDeployer extends SimpleDeployer<SecurityContainer, DummyApp
                 SecurityUtil.generatePolicyFile(cid);
                 websecurityProbeProvider.policyCreationEndedEvent(cid);
                 websecurityProbeProvider.policyCreationEvent(cid);
-                
+
             }
         } catch (Exception se) {
             String msg = "Error in generating security policy for " +
@@ -273,7 +286,7 @@ public class SecurityDeployer extends SimpleDeployer<SecurityContainer, DummyApp
     /**
      * commits ejb policy contexts.
      * This should occur in EjbApplication, being done here until
-     * issue with ejb-ejb31-singleton-multimoduleApp.ear is resolved   
+     * issue with ejb-ejb31-singleton-multimoduleApp.ear is resolved
      * @param ejbs
      */
     private void commitEjbs(Application app) throws DeploymentException {
@@ -285,7 +298,7 @@ public class SecurityDeployer extends SimpleDeployer<SecurityContainer, DummyApp
                 SecurityUtil.generatePolicyFile(pcid);
                 ejbProbeProvider.policyCreationEndedEvent(pcid);
                 ejbProbeProvider.policyCreationEvent(pcid);
-               
+
             }
         } catch (Exception se) {
             String msg = "Error in committing security policy for ejbs of " +
@@ -336,7 +349,7 @@ public class SecurityDeployer extends SimpleDeployer<SecurityContainer, DummyApp
             return;
         }
         String appName = params.name();
-        //Monitoring 
+        //Monitoring
 
         //Remove policy files only if managers are not destroyed by cleanup
         try {
@@ -390,6 +403,7 @@ public class SecurityDeployer extends SimpleDeployer<SecurityContainer, DummyApp
         }*/
     }
 
+    @Override
     public MetaData getMetaData() {
         return new MetaData(false, null, new Class[]{Application.class});
     }
@@ -427,11 +441,12 @@ public class SecurityDeployer extends SimpleDeployer<SecurityContainer, DummyApp
     }
 
     public static List<EventTypes> getDeploymentEvents() {
-        ArrayList<EventTypes> events = new ArrayList<EventTypes>();
+        ArrayList<EventTypes> events = new ArrayList<>();
         events.add(Deployment.APPLICATION_PREPARED);
         return events;
     }
 
+    @Override
     public void postConstruct() {
         listener = new AppDeployEventListener();
         Events events = eventsProvider.get();
@@ -447,7 +462,7 @@ public class SecurityDeployer extends SimpleDeployer<SecurityContainer, DummyApp
                 haUtil = haUtilProvider.get();
             }
         }
-        
+
         if (haUtil != null && haUtil.isHAEnabled()) {
             haEnabled = true;
             synchronized (this) {

@@ -37,7 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-// Portions Copyright [2016-2018] [Payara Foundation and/or its affiliates]
+// Portions Copyright [2016-2020] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.web;
 
@@ -148,7 +148,6 @@ import com.sun.enterprise.container.common.spi.util.JavaEEIOUtils;
 import com.sun.enterprise.deployment.Application;
 import com.sun.enterprise.deployment.WebBundleDescriptor;
 import com.sun.enterprise.deployment.WebComponentDescriptor;
-import com.sun.enterprise.security.PolicyLoader;
 import com.sun.enterprise.security.ee.SecurityDeployer;
 import com.sun.enterprise.security.integration.RealmInitializer;
 import com.sun.enterprise.server.logging.LoggingRuntime;
@@ -376,9 +375,6 @@ public class WebContainer implements org.glassfish.api.container.Container, Post
     protected ServletProbeProvider servletProbeProvider = null;
     protected SessionProbeProvider sessionProbeProvider = null;
     protected WebModuleProbeProvider webModuleProbeProvider = null;
-    
-    @Inject
-    private PolicyLoader policyLoader;
 
     @Inject
     private SecurityDeployer securityDeployer;
@@ -609,7 +605,6 @@ public class WebContainer implements org.glassfish.api.container.Container, Post
                 createHosts(httpService, securityService);
             }
 
-            policyLoader.loadPolicy();
             loadSystemDefaultWebModules();
 
             //_lifecycle.fireLifecycleEvent(START_EVENT, null);
