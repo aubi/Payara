@@ -708,6 +708,7 @@ public class StandardSession
     /**
      * Return the <code>isValid</code> flag for this session.
      */
+    @Override
     public boolean isValid() {
 
         if (this.expiring){
@@ -722,15 +723,6 @@ public class StandardSession
             return true;
         }
 
-        /* SJSAS 6329289
-        if (maxInactiveInterval >= 0) { 
-            long timeNow = System.currentTimeMillis();
-            int timeIdle = (int) ((timeNow - thisAccessedTime) / 1000L);
-            if (timeIdle >= maxInactiveInterval) {
-                expire(true);
-            }
-        }
-        */
         // START SJSAS 6329289
         if (hasExpired()) {
             expire(true);
@@ -1346,13 +1338,21 @@ public class StandardSession
      */
     public Enumeration<String> getAttributeNames() {
 
-        if (!isValid())
+        if (!isValid()) {
             throw new IllegalStateException
-                ("getAttributeNames: " + rb.getString(LogFacade.SESSION_INVALIDATED_EXCEPTION));
+              ("getAttributeNames: " + rb.getString(LogFacade.SESSION_INVALIDATED_EXCEPTION));
+        }
 
+        return getAttributeNamesInternal();
+    }
 
-        return (new Enumerator<String>(attributes.keySet(), true));
-
+    /**
+     * Returns names of attributes even for expired session.
+     *
+     * @return names of attributes ignoring state of session
+     */
+    protected Enumerator<String> getAttributeNamesInternal() {
+        return new Enumerator<>(attributes.keySet(), true);
     }
 
 

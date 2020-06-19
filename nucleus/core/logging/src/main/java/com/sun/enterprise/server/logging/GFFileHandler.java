@@ -37,7 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-// Portions Copyright [2016-2018] [Payara Foundation and/or its affiliates]
+// Portions Copyright [2016-2020] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.server.logging;
 
@@ -221,6 +221,7 @@ PostConstruct, PreDestroy, LogEventBroadcaster, LoggingRuntime {
         String strLine = "";
         int odlFormatter = 0;
         int uniformLogFormatter = 0;
+        int jsonLogFormatter = 0;
         int otherFormatter = 0;
         boolean mustRotate = false;
 
@@ -242,6 +243,9 @@ PostConstruct, PreDestroy, LogEventBroadcaster, LoggingRuntime {
                     } else if (LogFormatHelper.isODLFormatLogHeader(strLine)) {
                         // for ODL formatter
                         odlFormatter++;
+                    } else if (LogFormatHelper.isJSONFormatLogHeader(strLine)) {
+                        //for JSON Log format
+                        jsonLogFormatter++;
                     } else {
                         otherFormatter++;  // for other formatter
                     }
@@ -272,6 +276,8 @@ PostConstruct, PreDestroy, LogEventBroadcaster, LoggingRuntime {
             currentFileHandlerFormatter = "com.sun.enterprise.server.logging.ODLLogFormatter";
         } else if (uniformLogFormatter > 0) {
             currentFileHandlerFormatter = "com.sun.enterprise.server.logging.UniformLogFormatter";
+        } else if (jsonLogFormatter > 0) {
+            currentFileHandlerFormatter = "fish.payara.enterprise.server.logging.JSONLogFormatter";
         }
 
         // start the Queue consumer thread.

@@ -37,22 +37,28 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-
+// Portions Copyright [2018] [Payara Foundation and/or its affiliates]
 package org.glassfish.kernel;
 
-import org.glassfish.api.event.EventTypes;
-import org.glassfish.api.event.Events;
-import org.jvnet.hk2.annotations.Service;
-import javax.inject.Inject;
-import org.glassfish.hk2.api.PostConstruct;
-import org.glassfish.api.admin.FileMonitoring;
-
 import java.io.File;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
+
+import javax.inject.Inject;
+
+import org.glassfish.api.admin.FileMonitoring;
+import org.glassfish.api.event.EventTypes;
+import org.glassfish.api.event.Events;
+import org.glassfish.hk2.api.PostConstruct;
+import org.jvnet.hk2.annotations.Service;
 
 /**
  * @author Jerome Dochez
@@ -68,25 +74,27 @@ public class FileMonitoringImpl implements FileMonitoring, PostConstruct {
 
     @Inject
     Events events;
-            
-    final Map<File, List<FileChangeListener>> listeners = new HashMap<File, List<FileChangeListener>>();
-    final Map<File, Long> monitored = new HashMap<File, Long>();
 
+    final Map<File, List<FileChangeListener>> listeners = new HashMap<>();
+    final Map<File, Long> monitored = new HashMap<>();
+
+    @Override
     public void postConstruct() {
         final ScheduledFuture<?> future = scheduledExecutor.scheduleWithFixedDelay(new Runnable() {
+            @Override
             public void run() {
                 if (monitored.isEmpty()) {
                     return;
                 }
                 // check our list of monitored files for any changes
-                Set<File> monitoredFiles = new HashSet<File>();
+                Set<File> monitoredFiles = new HashSet<>();
                 monitoredFiles.addAll(listeners.keySet());
                 for (File file : monitoredFiles) {
                     if (!file.exists()) {
                         removed(file);
                         listeners.remove(file);
                         monitored.remove(file);
-                    } else 
+                    } else
                     if (file.lastModified()!=monitored.get(file)) {
                         // file has changed
                         monitored.put(file, file.lastModified());
@@ -107,18 +115,24 @@ public class FileMonitoringImpl implements FileMonitoring, PostConstruct {
         });
     }
 
+    @Override
     public synchronized void monitors(File file, FileChangeListener listener) {
-
         if (monitored.containsKey(file)) {
-            listeners.get(file).add(listener);
+            if (listeners.containsKey(file)) {
+                listeners.get(file).add(listener);
+            }
+            final ArrayList<FileChangeListener> list = new ArrayList<>();
+            list.add(listener);
+            listeners.put(file, list);
         } else {
-            List<FileChangeListener> list = new ArrayList<FileChangeListener>();
+            List<FileChangeListener> list = new ArrayList<>();
             list.add(listener);
             listeners.put(file, list);
             monitored.put(file, file.lastModified());
         }
     }
 
+    @Override
     public synchronized void fileModified(File file) {
         monitored.put(file, 0L);
     }
@@ -126,6 +140,7 @@ public class FileMonitoringImpl implements FileMonitoring, PostConstruct {
     private void removed(final File file) {
         for (final FileChangeListener listener : listeners.get(file)) {
             executor.submit(new Runnable() {
+                @Override
                 public void run() {
                     listener.deleted(file);
                 }
@@ -137,6 +152,7 @@ public class FileMonitoringImpl implements FileMonitoring, PostConstruct {
     private void changed(final File file) {
         for (final FileChangeListener listener : listeners.get(file)) {
             executor.submit(new Runnable() {
+                @Override
                 public void run() {
                     listener.changed(file);
                 }
