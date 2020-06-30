@@ -134,22 +134,23 @@ public final class ModelUtils {
      *         none.
      */
     public static HttpMethod getHttpMethod(Method method) {
-        if (method.isAnnotationPresent(GET.class)) {
+        AnnotationInfo<?> annotations = AnnotationInfo.valueOf(method.getDeclaringClass());
+        if (annotations.isAnnotationPresent(GET.class, method)) {
             return HttpMethod.GET;
         }
-        if (method.isAnnotationPresent(POST.class)) {
+        if (annotations.isAnnotationPresent(POST.class, method)) {
             return HttpMethod.POST;
         }
-        if (method.isAnnotationPresent(PUT.class)) {
+        if (annotations.isAnnotationPresent(PUT.class, method)) {
             return HttpMethod.PUT;
         }
-        if (method.isAnnotationPresent(DELETE.class)) {
+        if (annotations.isAnnotationPresent(DELETE.class, method)) {
             return HttpMethod.DELETE;
         }
-        if (method.isAnnotationPresent(HEAD.class)) {
+        if (annotations.isAnnotationPresent(HEAD.class, method)) {
             return HttpMethod.HEAD;
         }
-        if (method.isAnnotationPresent(OPTIONS.class)) {
+        if (annotations.isAnnotationPresent(OPTIONS.class, method)) {
             return HttpMethod.OPTIONS;
         }
         return null;
@@ -322,67 +323,70 @@ public final class ModelUtils {
     }
 
     public static boolean isRequestBody(Parameter parameter) {
-        if (parameter.getDeclaredAnnotations().length == 0) {
+        AnnotationInfo<?> annotations = AnnotationInfo.valueOf(parameter.getDeclaringExecutable().getDeclaringClass());
+        if (annotations.getAnnotationCount(parameter) == 0) {
             return true;
         }
-        if (parameter.isAnnotationPresent(FormParam.class)) {
+        if (annotations.isAnnotationPresent(FormParam.class, parameter)) {
             return false;
         }
-        if (parameter.isAnnotationPresent(QueryParam.class)) {
+        if (annotations.isAnnotationPresent(QueryParam.class, parameter)) {
             return false;
         }
-        if (parameter.isAnnotationPresent(MatrixParam.class)) {
+        if (annotations.isAnnotationPresent(MatrixParam.class, parameter)) {
             return false;
         }
-        if (parameter.isAnnotationPresent(BeanParam.class)) {
+        if (annotations.isAnnotationPresent(BeanParam.class, parameter)) {
             return false;
         }
-        if (parameter.isAnnotationPresent(HeaderParam.class)) {
+        if (annotations.isAnnotationPresent(HeaderParam.class, parameter)) {
             return false;
         }
-        if (parameter.isAnnotationPresent(PathParam.class)) {
+        if (annotations.isAnnotationPresent(PathParam.class, parameter)) {
             return false;
         }
-        if (parameter.isAnnotationPresent(CookieParam.class)) {
+        if (annotations.isAnnotationPresent(CookieParam.class, parameter)) {
             return false;
         }
-        if (parameter.isAnnotationPresent(Context.class)) {
+        if (annotations.isAnnotationPresent(Context.class, parameter)) {
             return false;
         }
-        if (parameter.isAnnotationPresent(Inject.class)) {
+        if (annotations.isAnnotationPresent(Inject.class, parameter)) {
             return false;
         }
-        if (parameter.isAnnotationPresent(Provider.class)) {
+        if (annotations.isAnnotationPresent(Provider.class, parameter)) {
             return false;
         }
         return true;
     }
 
     public static In getParameterType(Parameter parameter) {
-        if (parameter.isAnnotationPresent(PathParam.class)) {
+        AnnotationInfo<?> annotations = AnnotationInfo.valueOf(parameter.getDeclaringExecutable().getDeclaringClass());
+        if (annotations.isAnnotationPresent(PathParam.class, parameter)) {
             return In.PATH;
         }
-        if (parameter.isAnnotationPresent(QueryParam.class)) {
+        if (annotations.isAnnotationPresent(QueryParam.class, parameter)) {
             return In.QUERY;
         }
-        if (parameter.isAnnotationPresent(HeaderParam.class)) {
+        if (annotations.isAnnotationPresent(HeaderParam.class, parameter)) {
             return In.HEADER;
         }
-        if (parameter.isAnnotationPresent(CookieParam.class)) {
+        if (annotations.isAnnotationPresent(CookieParam.class, parameter)) {
             return In.COOKIE;
         }
         return null;
     }
 
     public static String getParameterName(Parameter parameter) {
-        if (parameter.isAnnotationPresent(PathParam.class)) {
-            return parameter.getDeclaredAnnotation(PathParam.class).value();
-        } else if (parameter.isAnnotationPresent(QueryParam.class)) {
-            return parameter.getDeclaredAnnotation(QueryParam.class).value();
-        } else if (parameter.isAnnotationPresent(HeaderParam.class)) {
-            return parameter.getDeclaredAnnotation(HeaderParam.class).value();
-        } else if (parameter.isAnnotationPresent(CookieParam.class)) {
-            return parameter.getDeclaredAnnotation(CookieParam.class).value();
+        AnnotationInfo<?> annotations = AnnotationInfo.valueOf(parameter.getDeclaringExecutable().getDeclaringClass());
+        if (annotations.isAnnotationPresent(PathParam.class, parameter)) {
+            return annotations.getAnnotation(PathParam.class, parameter).value();
+        } else if (annotations.isAnnotationPresent(QueryParam.class, parameter)) {
+            return annotations.getAnnotation(QueryParam.class, parameter).value();
+        } else if (annotations.isAnnotationPresent(HeaderParam.class, parameter)) {
+            return annotations.getAnnotation(HeaderParam.class, parameter).value();
+        } else if (annotations.isAnnotationPresent(CookieParam.class, parameter)) {
+            return annotations.getAnnotation(CookieParam.class, parameter).value();
         }
         return null;
     }
@@ -538,7 +542,7 @@ public final class ModelUtils {
             }
         }
     }
-    
+
     public static org.eclipse.microprofile.openapi.models.Operation getOperation(Method method,
             OpenAPI api, Map<String, Set<Class<?>>> resourceMapping) {
         String path = getResourcePath(method, resourceMapping);
@@ -553,34 +557,43 @@ public final class ModelUtils {
     }
 
     public static String getResourcePath(GenericDeclaration declaration, Map<String, Set<Class<?>>> resourceMapping) {
-        String path = null;
         if (declaration instanceof Method) {
-            Method method = (Method) declaration;
-
-            // If the method is a valid resource
-            if (method.isAnnotationPresent(GET.class) || method.isAnnotationPresent(POST.class)
-                    || method.isAnnotationPresent(PUT.class) || method.isAnnotationPresent(DELETE.class)
-                    || method.isAnnotationPresent(HEAD.class) || method.isAnnotationPresent(OPTIONS.class)) {
-                if (method.isAnnotationPresent(Path.class)) {
-                    path = getResourcePath(method.getDeclaringClass(), resourceMapping) + "/"
-                            + method.getDeclaredAnnotation(Path.class).value();
-                } else {
-                    path = getResourcePath(method.getDeclaringClass(), resourceMapping);
-                }
-            }
+            return getResourcePath((Method) declaration, resourceMapping);
         }
         if (declaration instanceof Class) {
-            Class<?> clazz = (Class<?>) declaration;
+            return getResourcePath((Class<?>) declaration, resourceMapping);
+        }
+        return null;
+    }
 
-            // If the class is a resource and contains a mapping
-            if (clazz.isAnnotationPresent(Path.class)) {
-                for (Entry<String, Set<Class<?>>> entry : resourceMapping.entrySet()) {
-                    if (entry.getValue() != null && entry.getValue().contains(clazz)) {
-                        path = entry.getKey() + "/" + clazz.getDeclaredAnnotation(Path.class).value();
-                    }
+    private static String getResourcePath(Class<?> clazz, Map<String, Set<Class<?>>> resourceMapping) {
+        // If the class is a resource and contains a mapping
+        AnnotationInfo<?> annotations = AnnotationInfo.valueOf(clazz);
+        if (annotations.isAnnotationPresent(Path.class)) {
+            for (Map.Entry<String, Set<Class<?>>> entry : resourceMapping.entrySet()) {
+                if (entry.getValue() != null && entry.getValue().contains(clazz)) {
+                    return normaliseUrl(entry.getKey() + "/" + annotations.getAnnotation(Path.class).value());
                 }
             }
         }
-        return normaliseUrl(path);
-    } 
+        return null;
+    }
+
+    private static String getResourcePath(Method method, Map<String, Set<Class<?>>> resourceMapping) {
+        AnnotationInfo<?> annotations = AnnotationInfo.valueOf(method.getDeclaringClass());
+        if (annotations.isAnnotationPresent(GET.class, method) 
+                || annotations.isAnnotationPresent(POST.class, method)
+                || annotations.isAnnotationPresent(PUT.class, method) 
+                || annotations.isAnnotationPresent(DELETE.class, method)
+                || annotations.isAnnotationPresent(HEAD.class, method)
+                || annotations.isAnnotationPresent(OPTIONS.class, method)) {
+            if (annotations.isAnnotationPresent(Path.class, method)) {
+                // If the method is a valid resource
+                return normaliseUrl(getResourcePath(method.getDeclaringClass(), resourceMapping) + "/"
+                        + annotations.getAnnotation(Path.class, method).value());
+            }
+            return normaliseUrl(getResourcePath(method.getDeclaringClass(), resourceMapping));
+        }
+        return null;
+    }
 }
