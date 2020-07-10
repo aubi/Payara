@@ -37,6 +37,9 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
+
+// Portions Copyright [2020] [Payara Foundation and/or its affiliates]
+
 package com.sun.enterprise.v3.admin.cluster;
 
 import java.util.List;
@@ -122,7 +125,7 @@ public abstract class DeleteNodeRemoteCommand implements AdminCommand {
             SshAuth sshAuth = sshC.getSshAuth();
 
             if (sshAuth.getPassword() != null)
-                info.add(NodeUtils.PARAM_REMOTEPASSWORD, sshAuth.getPassword());
+                info.add(NodeUtils.PARAM_SSHPASSWORD, sshAuth.getPassword());
 
             if (sshAuth.getKeyPassphrase() != null)
                 info.add(NodeUtils.PARAM_SSHKEYPASSPHRASE, sshAuth.getKeyPassphrase());
@@ -161,10 +164,10 @@ public abstract class DeleteNodeRemoteCommand implements AdminCommand {
     private boolean uninstallNode(AdminCommandContext ctx, ParameterMap map, Node node) {
         boolean res = false;
 
-        remotepassword = map.getOne(NodeUtils.PARAM_REMOTEPASSWORD);
+        remotepassword = map.getOne(NodeUtils.PARAM_SSHPASSWORD);
         sshkeypassphrase = map.getOne(NodeUtils.PARAM_SSHKEYPASSPHRASE);
 
-        ArrayList<String> command = new ArrayList<String>();
+        ArrayList<String> command = new ArrayList<>();
 
         command.add(getUninstallCommandName());
         command.add("--installdir");

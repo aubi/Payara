@@ -38,6 +38,8 @@
  * holder.
  */
 
+// Portions Copyright [2020] Payara Foundation and/or affiliates
+
 package org.glassfish.api.admin;
 
 import org.jvnet.hk2.component.MultiMap;
@@ -47,6 +49,9 @@ import org.jvnet.hk2.component.MultiMap;
  * (Really just a more convenient name for MultiMap.)
  */
 public class ParameterMap extends MultiMap<String, String> {
+    
+    private static final long serialVersionUID = -4283882776966412741L;
+    
     /**
      * Creates an empty ParameterMap.
      */
@@ -55,7 +60,9 @@ public class ParameterMap extends MultiMap<String, String> {
     }
 
     /**
-     * Copy constructor.
+     * Copy constructor - copies all entries from base.
+     *
+     * @param base source of entries
      */
     public ParameterMap(ParameterMap base) {
         super(base);
@@ -63,12 +70,25 @@ public class ParameterMap extends MultiMap<String, String> {
 
     /**
      * Fluent API for adding parameters to the map.
-     * @param k
-     * @param v
+     * 
+     * @param key
+     * @param value
      * @return ParameterMap
      */
-    public ParameterMap insert(String k, String v) {
-        add(k, v);
+    public ParameterMap insert(String key, String value) {
+        add(key, value);
         return this;
+    }
+    
+    /**
+     * Fluent API for adding parameters to the map.
+     *
+     * @param key
+     * @param value - used if not null
+     * @param defaultValue - used if the value is null
+     * @return ParameterMap
+     */
+    public ParameterMap insert(String key, String value, String defaultValue) {
+        return insert(key, value == null ? defaultValue : value);
     }
 }

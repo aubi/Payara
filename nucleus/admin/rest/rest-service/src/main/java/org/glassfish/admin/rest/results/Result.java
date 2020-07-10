@@ -38,6 +38,8 @@
  * holder.
  */
 
+// Portions Copyright [2020] [Payara Foundation and/or its affiliates] 
+
 package org.glassfish.admin.rest.results;
 
 /**
@@ -87,6 +89,12 @@ public class Result {
      */
     public void setErrorMessage(String errorMessage) {
         __errorMessage =  errorMessage;
+    }
+
+    @Override
+    public String toString() {
+        return super.toString() //
+                + "[name: " + getName() + ", error: " + isError() + ", message: " + getErrorMessage() + "]";
     }
 
     boolean __isError;

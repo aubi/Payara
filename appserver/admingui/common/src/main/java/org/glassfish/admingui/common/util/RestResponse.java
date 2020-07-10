@@ -38,6 +38,8 @@
  * holder.
  */
 
+// Portions Copyright [2020] [Payara Foundation and/or its affiliates] 
+
 package org.glassfish.admingui.common.util;
 
 import org.w3c.dom.*;
@@ -120,6 +122,7 @@ public abstract class RestResponse {
 
 
 class JerseyRestResponse extends RestResponse {
+    private static final Logger LOG = Logger.getLogger(JerseyRestResponse.class.getName());
     protected Response response;
     private String body = null;
 
@@ -222,8 +225,7 @@ class JerseyRestResponse extends RestResponse {
                 result.put("data", JSONUtil.jsonToJava(responseBody));
             } else {
                 // Unsupported Response Format!
-                System.out.println("Unsupported Response Format: '"
-		    + contentType + "'!");
+                LOG.severe("Unsupported Response Format: '" + contentType + "'!");
             }
         }
 

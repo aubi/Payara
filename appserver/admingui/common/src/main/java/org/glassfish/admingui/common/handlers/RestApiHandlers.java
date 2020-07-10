@@ -38,6 +38,8 @@
  * holder.
  */
 
+// Portions Copyright [2020] [Payara Foundation and/or its affiliates]
+
 package org.glassfish.admingui.common.handlers;
 
 import java.util.*;
@@ -179,7 +181,7 @@ public class RestApiHandlers {
     public static void createEntity(HandlerContext handlerCtx) {
         Map<String, Object> attrs = (Map) handlerCtx.getInputValue("attrs");
         if (attrs == null) {
-            attrs = new HashMap<String, Object>();
+            attrs = new HashMap<>();
         }
         String endpoint = (String) handlerCtx.getInputValue("endpoint");
 
@@ -257,7 +259,7 @@ public class RestApiHandlers {
     public static void updateEntity(HandlerContext handlerCtx) {
         Map<String, Object> attrs = (Map) handlerCtx.getInputValue("attrs");
         if (attrs == null) {
-            attrs = new HashMap<String, Object>();
+            attrs = new HashMap<>();
         }
         String endpoint = (String) handlerCtx.getInputValue("endpoint");
 
@@ -265,10 +267,10 @@ public class RestApiHandlers {
                 (List) handlerCtx.getInputValue("onlyUseAttrs"), (List) handlerCtx.getInputValue("convertToFalse"));
 
         if (!response.isSuccess()) {
-             GuiUtil.getLogger().log(
-                Level.SEVERE,
-                GuiUtil.getCommonMessage("LOG_UPDATE_ENTITY_FAILED", new Object[]{endpoint, attrs}));
-            GuiUtil.handleError(handlerCtx, GuiUtil.getMessage("msg.error.checkLog"));
+            GuiUtil.getLogger().log(Level.SEVERE, GuiUtil.getCommonMessage("LOG_UPDATE_ENTITY_FAILED",
+                    new Object[]{endpoint, attrs}) + '\n' + response.getResponseBody());
+            final String originalMessage = GuiUtil.tryToFindOriginalErrorMessage(response.getResponseBody());
+            GuiUtil.handleError(handlerCtx, GuiUtil.getMessage("msg.error.checkLog") + '\n' + originalMessage);
             return;
         }
 
@@ -290,7 +292,7 @@ public class RestApiHandlers {
             })
     public static void deleteCascade(HandlerContext handlerCtx) {
         try {
-            Map<String, Object> payload = new HashMap<String, Object>();
+            Map<String, Object> payload = new HashMap<>();
             String endpoint = (String) handlerCtx.getInputValue("endpoint");
             String id = (String) handlerCtx.getInputValue("id");
             String cascade = (String) handlerCtx.getInputValue("cascade");
@@ -325,7 +327,7 @@ public class RestApiHandlers {
             String prefix = (String) handlerCtx.getInputValue("endpoint");
 
             Map<String, Object> payload = new HashMap<>();
-            payload.put("target", (String) handlerCtx.getInputValue("target"));
+            payload.put("target", handlerCtx.getInputValue("target"));
 
             for ( Map oneRow : selectedRows) {
                 try{
