@@ -65,7 +65,7 @@ import fish.payara.samples.ServerOperations;
 @RunWith(PayaraArquillianTestRunner.class)
 public abstract class RestManagementTest {
 
-    private WebTarget target;
+    protected WebTarget target;
 
     @ArquillianResource
     private URL baseUrl;
