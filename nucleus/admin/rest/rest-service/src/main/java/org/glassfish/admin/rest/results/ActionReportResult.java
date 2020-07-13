@@ -38,6 +38,8 @@
  * holder.
  */
 
+// Portions Copyright [2020] [Payara Foundation and/or its affiliates] 
+
 package org.glassfish.admin.rest.results;
 
 import com.sun.enterprise.v3.common.ActionReporter;
@@ -54,8 +56,8 @@ import org.jvnet.hk2.config.ConfigBean;
  * @author Ludovic Champenois
  */
 public class ActionReportResult extends Result {
-    private RestActionReporter __message;
-    private OptionsResult __metaData;
+    private final RestActionReporter __message;
+    private final OptionsResult __metaData;
     private ConfigBean __entity;
     private String commandDisplayName = null;
     private LeafResource.LeafContent leafContent = null;
@@ -131,5 +133,11 @@ public class ActionReportResult extends Result {
 
     public ConfigBean getEntity() {
         return __entity;
+    }
+    
+    @Override
+    public String toString() {
+        return super.toString() //
+                + "[actionReport: " + getActionReport() + "]";
     }
 }

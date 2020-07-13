@@ -1,7 +1,7 @@
 /*
  * DO NOT ALTER OR REMOVE COPYRIGHT NOTICES OR THIS HEADER.
  *
- * Copyright (c) [2018] Payara Foundation and/or its affiliates. All rights reserved.
+ * Copyright (c) [2018-2019] Payara Foundation and/or its affiliates. All rights reserved.
  *
  * The contents of this file are subject to the terms of either the GNU
  * General Public License Version 2 only ("GPL") or the Common Development
@@ -40,13 +40,16 @@
 package fish.payara.microprofile.openapi.impl.processor;
 
 import static java.util.logging.Level.FINE;
-import static java.util.logging.Level.WARNING;
 import static java.util.logging.Level.SEVERE;
+import static java.util.logging.Level.WARNING;
 
+import java.lang.annotation.Annotation;
 import java.lang.reflect.AnnotatedElement;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.lang.reflect.ParameterizedType;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -99,6 +102,7 @@ import org.eclipse.microprofile.openapi.models.Reference;
 import org.eclipse.microprofile.openapi.models.media.MediaType;
 import org.eclipse.microprofile.openapi.models.media.Schema.SchemaType;
 import org.eclipse.microprofile.openapi.models.parameters.Parameter.In;
+import org.eclipse.microprofile.openapi.models.parameters.Parameter.Style;
 
 import fish.payara.microprofile.openapi.api.processor.OASProcessor;
 import fish.payara.microprofile.openapi.api.visitor.ApiContext;
@@ -121,12 +125,10 @@ import fish.payara.microprofile.openapi.impl.model.security.SecurityRequirementI
 import fish.payara.microprofile.openapi.impl.model.security.SecuritySchemeImpl;
 import fish.payara.microprofile.openapi.impl.model.servers.ServerImpl;
 import fish.payara.microprofile.openapi.impl.model.tags.TagImpl;
+import fish.payara.microprofile.openapi.impl.model.util.AnnotationInfo;
 import fish.payara.microprofile.openapi.impl.model.util.ModelUtils;
 import fish.payara.microprofile.openapi.impl.visitor.OpenApiContext;
 import fish.payara.microprofile.openapi.impl.visitor.OpenApiWalker;
-import java.lang.annotation.Annotation;
-import java.lang.reflect.ParameterizedType;
-import org.eclipse.microprofile.openapi.models.parameters.Parameter.Style;
 
 /**
  * A processor to parse the application for annotations, to add to the OpenAPI
@@ -146,6 +148,26 @@ public class ApplicationProcessor implements OASProcessor, ApiVisitor {
      */
     public ApplicationProcessor(Set<Class<?>> appClasses) {
         this.classes = appClasses;
+        this.classes.removeIf(cls -> cls.isInterface() || Modifier.isAbstract(cls.getModifiers()));
+        if (classes != null) {
+            addInnerClasses();
+        }
+    }
+
+    private void addInnerClasses() {
+        List<Class<?>> topLevelClasses = new ArrayList<>(classes);
+        for (Class<?> topLevelClass : topLevelClasses) {
+            addInnerClasses(topLevelClass);
+        }
+    }
+
+    private void addInnerClasses(Class<?> topLevelClass) {
+        if (topLevelClass != null) {
+            classes.addAll(Arrays.asList(topLevelClass.getDeclaredClasses()));
+            if (topLevelClass.getSuperclass() != Object.class) {
+                addInnerClasses(topLevelClass.getSuperclass());
+            }
+        }
     }
 
     @Override
@@ -491,111 +513,143 @@ public class ApplicationProcessor implements OASProcessor, ApiVisitor {
     @Override
     public void visitSchema(Schema schema, AnnotatedElement element, ApiContext context) {
         if (element instanceof Class) {
-
-            // Get the schema object name
-            String schemaName = (schema == null) ? null : schema.name();
-            if (schemaName == null || schemaName.isEmpty()) {
-                schemaName = Class.class.cast(element).getSimpleName();
-            }
-
-            // Add a new schema
-            org.eclipse.microprofile.openapi.models.media.Schema newSchema = new SchemaImpl();
-            context.getApi().getComponents().addSchema(schemaName, newSchema);
-
-            // If there is an annotation
-            if (schema != null) {
-                SchemaImpl.merge(schema, newSchema, true, context.getApi().getComponents().getSchemas());
+            if (((Class) element).isEnum()) {
+                vistEnumClass(schema, (Class<?>) element, context);
             } else {
-                newSchema.setType(SchemaType.OBJECT);
-                Map<String, org.eclipse.microprofile.openapi.models.media.Schema> fields = new LinkedHashMap<>();
-                for (Field field : Class.class.cast(element).getDeclaredFields()) {
-                    if (!Modifier.isTransient(field.getModifiers())) {
-                        fields.put(field.getName(), createSchema(context, element, field.getType()));
-                    }
-                }
-                newSchema.setProperties(fields);
-            }
-
-            // If there is an extending class, add the data
-            if (Class.class.cast(element).getSuperclass() != null) {
-                Class<?> superClass = Class.class.cast(element).getSuperclass();
-
-                // If the super class is legitimate
-                if (!superClass.equals(Object.class)) {
-
-                    // Get the parent schema annotation
-                    Schema parentSchema = superClass.getDeclaredAnnotation(Schema.class);
-
-                    // Create a schema for the parent
-                    visitSchema(parentSchema, superClass, context);
-
-                    // Get the superclass schema name
-                    String parentSchemaName = (parentSchema == null) ? null : parentSchema.name();
-                    if (parentSchemaName == null || parentSchemaName.isEmpty()) {
-                        parentSchemaName = Class.class.cast(superClass).getSimpleName();
-                    }
-
-                    // Link the schemas
-                    newSchema.addAllOf(new SchemaImpl().ref(parentSchemaName));
-                }
+                visitSchemaClass(schema, (Class<?>) element, context);
             }
         }
         if (element instanceof Field) {
-
-            // Get the schema object name
-            String schemaName = schema.name();
-            if (schemaName == null || schemaName.isEmpty()) {
-                schemaName = Field.class.cast(element).getName();
-            }
-
-            // Get the parent schema object name
-            String parentName = null;
-            if (Field.class.cast(element).getDeclaringClass().isAnnotationPresent(Schema.class)) {
-                parentName = Field.class.cast(element).getDeclaringClass().getDeclaredAnnotation(Schema.class).name();
-            }
-            if (parentName == null || parentName.isEmpty()) {
-                parentName = Field.class.cast(element).getDeclaringClass().getSimpleName();
-            }
-
-            // Get or create the parent schema object
-            org.eclipse.microprofile.openapi.models.media.Schema parent = context.getApi().getComponents().getSchemas()
-                    .getOrDefault(parentName, new SchemaImpl());
-            context.getApi().getComponents().getSchemas().put(parentName, parent);
-
-            org.eclipse.microprofile.openapi.models.media.Schema property = new SchemaImpl();
-            parent.addProperty(schemaName, property);
-            property.setType(ModelUtils.getSchemaType(Field.class.cast(element).getType()));
-            SchemaImpl.merge(schema, property, true, context.getApi().getComponents().getSchemas());
+            visitSchemaField(schema, (Field) element, context);
         }
         if (element instanceof java.lang.reflect.Parameter) {
-
-            // If this is being parsed at the start, ignore it as the path doesn't exist
-            if (context.getWorkingOperation() == null) {
-                return;
+            visitSchemaParameter(schema, (java.lang.reflect.Parameter) element, context);
+        }
+    }
+    
+    private void vistEnumClass(Schema schema, Class<?> clazz, ApiContext context) {
+        // Get the schema object name
+        String schemaName = (schema == null) ? null : schema.name();
+        if (schemaName == null || schemaName.isEmpty()) {
+            schemaName = clazz.getSimpleName();
+        }
+        
+        org.eclipse.microprofile.openapi.models.media.Schema newSchema = new SchemaImpl();
+        context.getApi().getComponents().addSchema(schemaName, newSchema);
+         if (schema != null) {
+            SchemaImpl.merge(schema, newSchema, true, context.getApi().getComponents().getSchemas());
+        }
+        if (schema == null || schema.enumeration().length == 0) {
+            //if the schema annotation does not specify enums, then all enum fields will be added
+            for (Object enumField : clazz.getEnumConstants()) {
+                newSchema.addEnumeration(enumField);
             }
+        }
+        
+    }
 
-            java.lang.reflect.Parameter parameter = (java.lang.reflect.Parameter) element;
-            // Check if it's a request body
-            if (ModelUtils.isRequestBody(parameter)) {
-                if (context.getWorkingOperation().getRequestBody() == null) {
-                    context.getWorkingOperation().setRequestBody(new RequestBodyImpl());
+    private void visitSchemaClass(Schema schema, Class<?> clazz, ApiContext context) {
+        // Get the schema object name
+        String schemaName = (schema == null) ? null : schema.name();
+        if (schemaName == null || schemaName.isEmpty()) {
+            schemaName = clazz.getSimpleName();
+        }
+        
+        // Add a new schema
+        org.eclipse.microprofile.openapi.models.media.Schema newSchema = new SchemaImpl();
+        context.getApi().getComponents().addSchema(schemaName, newSchema);
+
+        // If there is an annotation
+        if (schema != null) {
+            SchemaImpl.merge(schema, newSchema, true, context.getApi().getComponents().getSchemas());
+        } else {
+            newSchema.setType(SchemaType.OBJECT);
+            Map<String, org.eclipse.microprofile.openapi.models.media.Schema> fields = new LinkedHashMap<>();
+            for (Field field : clazz.getDeclaredFields()) {
+                if (!Modifier.isTransient(field.getModifiers())) {
+                    fields.put(field.getName(), createSchema(context, clazz, field.getType()));
                 }
-                // Insert the schema to the request body media type
-                MediaType mediaType = context.getWorkingOperation().getRequestBody().getContent()
-                        .get(javax.ws.rs.core.MediaType.WILDCARD);
-                SchemaImpl.merge(schema, mediaType.getSchema(), true, context.getApi().getComponents().getSchemas());
-                if (schema.ref() != null && !schema.ref().isEmpty()) {
-                    mediaType.setSchema(new SchemaImpl().ref(schema.ref()));
+            }
+            newSchema.setProperties(fields);
+        }
+
+        // If there is an extending class, add the data
+        if (clazz.getSuperclass() != null) {
+            Class<?> superClass = clazz.getSuperclass();
+
+            // If the super class is legitimate
+            if (!superClass.equals(Object.class) && !superClass.equals(Enum.class)) {
+
+                // Get the parent schema annotation
+                Schema parentSchema = superClass.getDeclaredAnnotation(Schema.class);
+
+                // Create a schema for the parent
+                visitSchema(parentSchema, superClass, context);
+
+                // Get the superclass schema name
+                String parentSchemaName = (parentSchema == null) ? null : parentSchema.name();
+                if (parentSchemaName == null || parentSchemaName.isEmpty()) {
+                    parentSchemaName = superClass.getSimpleName();
                 }
-            } else if (ModelUtils.getParameterType(parameter) != null) {
-                for (org.eclipse.microprofile.openapi.models.parameters.Parameter param : context.getWorkingOperation()
-                        .getParameters()) {
-                    if (param.getName().equals(ModelUtils.getParameterName(parameter))) {
-                        SchemaImpl.merge(schema, param.getSchema(), true,
-                                context.getApi().getComponents().getSchemas());
-                        if (schema.ref() != null && !schema.ref().isEmpty()) {
-                            param.setSchema(new SchemaImpl().ref(schema.ref()));
-                        }
+
+                // Link the schemas
+                newSchema.addAllOf(new SchemaImpl().ref(parentSchemaName));
+            }
+        }
+    }
+
+    private void visitSchemaField(Schema schema, Field field, ApiContext context) {
+        // Get the schema object name
+        String schemaName = schema.name();
+        if (schemaName == null || schemaName.isEmpty()) {
+            schemaName = field.getName();
+        }
+
+        // Get the parent schema object name
+        String parentName = null;
+        if (field.getDeclaringClass().isAnnotationPresent(Schema.class)) {
+            parentName = field.getDeclaringClass().getDeclaredAnnotation(Schema.class).name();
+        }
+        if (parentName == null || parentName.isEmpty()) {
+            parentName = field.getDeclaringClass().getSimpleName();
+        }
+
+        // Get or create the parent schema object
+        org.eclipse.microprofile.openapi.models.media.Schema parent = context.getApi().getComponents().getSchemas()
+                .getOrDefault(parentName, new SchemaImpl());
+        context.getApi().getComponents().getSchemas().put(parentName, parent);
+
+        org.eclipse.microprofile.openapi.models.media.Schema property = new SchemaImpl();
+        parent.addProperty(schemaName, property);
+        property.setType(ModelUtils.getSchemaType(field.getType()));
+        SchemaImpl.merge(schema, property, true, context.getApi().getComponents().getSchemas());
+    }
+
+    private void visitSchemaParameter(Schema schema, java.lang.reflect.Parameter parameter, ApiContext context) {
+        // If this is being parsed at the start, ignore it as the path doesn't exist
+        if (context.getWorkingOperation() == null) {
+            return;
+        }
+        // Check if it's a request body
+        if (ModelUtils.isRequestBody(parameter)) {
+            if (context.getWorkingOperation().getRequestBody() == null) {
+                context.getWorkingOperation().setRequestBody(new RequestBodyImpl());
+            }
+            // Insert the schema to the request body media type
+            MediaType mediaType = context.getWorkingOperation().getRequestBody().getContent()
+                    .get(javax.ws.rs.core.MediaType.WILDCARD);
+            SchemaImpl.merge(schema, mediaType.getSchema(), true, context.getApi().getComponents().getSchemas());
+            if (schema.ref() != null && !schema.ref().isEmpty()) {
+                mediaType.setSchema(new SchemaImpl().ref(schema.ref()));
+            }
+        } else if (ModelUtils.getParameterType(parameter) != null) {
+            for (org.eclipse.microprofile.openapi.models.parameters.Parameter param : context.getWorkingOperation()
+                    .getParameters()) {
+                if (param.getName().equals(ModelUtils.getParameterName(parameter))) {
+                    SchemaImpl.merge(schema, param.getSchema(), true,
+                            context.getApi().getComponents().getSchemas());
+                    if (schema.ref() != null && !schema.ref().isEmpty()) {
+                        param.setSchema(new SchemaImpl().ref(schema.ref()));
                     }
                 }
             }
@@ -643,17 +697,15 @@ public class ApplicationProcessor implements OASProcessor, ApiVisitor {
 
     @Override
     public void visitRequestBody(RequestBody requestBody, AnnotatedElement element, ApiContext context) {
-        if (element instanceof Method) {
-            if (context.getWorkingOperation().getRequestBody() != null) {
-                RequestBodyImpl.merge(requestBody, context.getWorkingOperation().getRequestBody(), true,
+        if (element instanceof Method || element instanceof java.lang.reflect.Parameter) {
+            org.eclipse.microprofile.openapi.models.parameters.RequestBody currentRequestBody = context
+                    .getWorkingOperation().getRequestBody();
+            if (currentRequestBody != null || element instanceof java.lang.reflect.Parameter) {
+                RequestBodyImpl.merge(requestBody, currentRequestBody, true,
                         context.getApi().getComponents().getSchemas());
             }
-        }
-        if (element instanceof java.lang.reflect.Parameter) {
-            if (context.getWorkingOperation().getRequestBody() != null) {
-                RequestBodyImpl.merge(requestBody, context.getWorkingOperation().getRequestBody(), true,
-                        context.getApi().getComponents().getSchemas());
-            }
+        } else {
+            System.out.println("Ignored");
         }
     }
 
@@ -1011,12 +1063,12 @@ public class ApplicationProcessor implements OASProcessor, ApiVisitor {
             return false;
         }
 
-        final Schema schema = referenceClass.getDeclaredAnnotation(Schema.class);
+        final Schema schema = AnnotationInfo.valueOf(referenceClass).getAnnotation(Schema.class);
         // Set the reference name
         referee.setRef(schema == null || schema.name().isEmpty() ? referenceClass.getSimpleName() : schema.name());
 
         // Create the schema
-        visitSchema(schema, referenceClass, context);
+        visitSchema(AnnotationInfo.valueOf(referenceClass).getAnnotation(Schema.class), referenceClass, context);
 
         return true;
     }

@@ -37,7 +37,7 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-// Portions Copyright [2018] Payara Foundation and/or affiliates
+// Portions Copyright [2018-2020] Payara Foundation and/or affiliates
 
 package com.sun.enterprise.v3.admin.cluster;
 
@@ -180,7 +180,7 @@ public abstract class CreateRemoteNodeCommand implements AdminCommand {
         map.add(NodeUtils.PARAM_NODEDIR, nodedir);
         map.add(NodeUtils.PARAM_REMOTEPORT, remotePort);
         map.add(NodeUtils.PARAM_REMOTEUSER, remoteUser);
-        map.add(NodeUtils.PARAM_REMOTEPASSWORD, remotePassword);
+        map.add(NodeUtils.PARAM_SSHPASSWORD, remotePassword);        
         map.add(NodeUtils.PARAM_TYPE, getType().toString());
         map.add(NodeUtils.PARAM_INSTALL, Boolean.toString(install));
 

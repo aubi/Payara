@@ -343,4 +343,9 @@ public abstract class ActionReport implements Serializable {
         }
         return null;
     }
+
+    @Override
+    public String toString() {
+        return super.toString() + "[actionExitCode: " + getActionExitCode() + ", message" + getMessage() + "]";
+    }
 }

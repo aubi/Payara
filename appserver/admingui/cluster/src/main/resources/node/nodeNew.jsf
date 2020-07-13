@@ -38,6 +38,8 @@
     only if the new code is made subject to such option by the copyright
     holder.
 
+    Portions Copyright [2020] [Payara Foundation and/or its affiliates]
+
 -->
 
 <!initPage
@@ -86,7 +88,7 @@
 
     />
     </event>
-<sun:form id="propertyForm" autoComplete="off">
+<sun:form id="propertyForm">
 #include "/common/shared/alertMsg.inc"
 #include "/cluster/node/nodeAttr.inc"
 

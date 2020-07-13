@@ -38,7 +38,7 @@
  * holder.
  */
 
-// Portions Copyright [2016-2017] [Payara Foundation and/or its affiliates] 
+// Portions Copyright [2016-2020] [Payara Foundation and/or its affiliates] 
 
 /*
  * GuiUtil.java
@@ -72,12 +72,17 @@ import com.sun.jsftemplating.annotation.Handler;
 import com.sun.jsftemplating.annotation.HandlerInput;
 import com.sun.jsftemplating.layout.descriptors.handler.HandlerContext;
 import java.io.File;
+import java.io.StringReader;
 
 import java.io.UnsupportedEncodingException;
 import javax.faces.context.ExternalContext;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
+import javax.json.Json;
+import javax.json.JsonObject;
+import javax.json.JsonStructure;
+import javax.json.JsonValue.ValueType;
 import org.glassfish.admingui.common.security.AdminConsoleAuthModule;
 import org.glassfish.hk2.api.ServiceLocator;
 
@@ -86,7 +91,16 @@ import org.glassfish.hk2.api.ServiceLocator;
  * @author anilam
  */
 public class GuiUtil {
-    /** Creates a new instance of GuiUtil */
+    
+    public static final String I18N_RESOURCE_BUNDLE = "__i18n_resource_bundle";
+    public static final String RESOURCE_NAME = "org.glassfish.admingui.core.Strings";
+    public static final String COMMON_RESOURCE_NAME = "org.glassfish.common.admingui.Strings";
+    public static final String LOGGER_NAME = "org.glassfish.admingui";
+    public static final Locale guiLocale = new Locale("UTF-8");
+
+    /**
+     * Creates a new instance of GuiUtil
+     */
     public GuiUtil() {
     }
 
@@ -252,15 +266,12 @@ public class GuiUtil {
             }
         } catch (Exception nfe) {
             ((HttpServletRequest) request).getSession().setMaxInactiveInterval(-1);
-            GuiUtil.getLogger().info(GuiUtil.getCommonMessage("log.error.initSession") + nfe.getLocalizedMessage());
-            if (GuiUtil.getLogger().isLoggable(Level.FINE)){
-                nfe.printStackTrace();
-            }
+            log("log.error.initSession", nfe);
         }
         try {
             setTimeStamp();
         } catch (Exception ex) {
-            logger.log(Level.FINE, ex.getMessage());
+            log("log.error.initSession", ex);
         }
 
     }
@@ -449,10 +460,7 @@ public class GuiUtil {
     public static void prepareException(HandlerContext handlerCtx, Throwable ex) {
         Throwable rootException = getRootCause(ex);
         prepareAlert("error", GuiUtil.getMessage("msg.Error"), rootException.getMessage());
-        GuiUtil.getLogger().info(GuiUtil.getCommonMessage("LOG_EXCEPTION_OCCURED") + ex.getLocalizedMessage());
-        if (GuiUtil.getLogger().isLoggable(Level.FINE)){
-            ex.printStackTrace();
-        }
+        log("LOG_EXCEPTION_OCCURED", ex);
     }
 
     /* This method sets up the attributes of the <sun:alert> message box so that any
@@ -478,11 +486,7 @@ public class GuiUtil {
             attrMap.put("alertDetail", isEmpty(detail) ? "" : URLEncoder.encode(detail, "UTF-8"));
             attrMap.put("alertSummary", isEmpty(summary) ? "" : URLEncoder.encode(summary, "UTF-8"));
         } catch (Exception ex) {
-            //we'll never get here. , well except for GLASSFISH-15831
-            GuiUtil.getLogger().info(GuiUtil.getCommonMessage("log.error.prepareAlert") + ex.getLocalizedMessage());
-            if (GuiUtil.getLogger().isLoggable(Level.FINE)){
-                ex.printStackTrace();
-            }
+            log("log.error.prepareAlert", ex);
         }
 
     }
@@ -496,8 +500,18 @@ public class GuiUtil {
         prepareAlert("error", GuiUtil.getMessage("msg.Error"), detail);
         handlerCtx.getFacesContext().renderResponse();
     }
+    
+    private static void log(final String messageKey, final Throwable e) {
+        final Logger logger = GuiUtil.getLogger();
+        if (logger.isLoggable(Level.CONFIG)) {
+            GuiUtil.getLogger().log(Level.CONFIG, GuiUtil.getCommonMessage(messageKey), e);
+        } else if (logger.isLoggable(Level.INFO)) {
+            logger.info(GuiUtil.getCommonMessage(messageKey) + e.getLocalizedMessage());
+        }
+    }
 
-    /* This method ensure that there will not be a NULL String for the passed in object.
+    /**
+     * This method ensure that there will not be a NULL String for the passed in object.
      */
     public static String notNull(String test) {
         return (test == null) ? "" : test;
@@ -799,11 +813,24 @@ public class GuiUtil {
 
         return (causes[causes.length - 1]);
     }
-
-
-    public static final String I18N_RESOURCE_BUNDLE = "__i18n_resource_bundle";
-    public static final String RESOURCE_NAME = "org.glassfish.admingui.core.Strings";
-    public static final String COMMON_RESOURCE_NAME = "org.glassfish.common.admingui.Strings";
-    public static final String LOGGER_NAME = "org.glassfish.admingui";
-    public static final Locale guiLocale = new Locale("UTF-8");
+    
+       public static String tryToFindOriginalErrorMessage(final Object entity) {
+        getLogger().finest(String.format("tryToFindOriginalErrorMessage(entity=%s)`; entity.class=%s", entity,
+            entity == null ? null : entity.getClass().getCanonicalName()));
+        try {
+            if (entity instanceof String) {
+                final JsonStructure parsed = Json.createReader(new StringReader(entity.toString())).read();
+                if (parsed.getValueType() == ValueType.OBJECT) {
+                    JsonObject jsonObject = (JsonObject) parsed;
+                    return jsonObject.getString("message");
+                }
+                getLogger().log(Level.WARNING,
+                    "Unsupported response entity, could not find an error message in the following response entity: {0}",
+                    parsed.getValueType());
+            }
+        } catch (Exception e) {
+            getLogger().log(Level.SEVERE, "Could not parse a response entity, returning empty string as a fallback.", e);
+        }
+        return "";
+    }
 }

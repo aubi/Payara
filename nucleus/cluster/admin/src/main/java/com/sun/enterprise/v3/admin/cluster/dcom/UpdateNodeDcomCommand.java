@@ -37,11 +37,12 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  */
-// Portions Copyright [2018] Payara Foundation and/or affiliates
+// Portions Copyright [2018-2020] Payara Foundation and/or affiliates
 
 package com.sun.enterprise.v3.admin.cluster.dcom;
 
 import com.sun.enterprise.util.cluster.RemoteType;
+import com.sun.enterprise.util.cluster.SshAuthType;
 import com.sun.enterprise.v3.admin.cluster.*;
 
 import com.sun.enterprise.config.serverbeans.Node;
@@ -97,6 +98,7 @@ public class UpdateNodeDcomCommand extends UpdateNodeRemoteCommand  {
     protected void populateParameters() {
         remotePort = "135";
         remoteUser = windowsuser;
+        sshAuthType = SshAuthType.PASSWORD.name();
         sshkeyfile = null;
         remotepassword = windowspassword;
         sshkeypassphrase = null;

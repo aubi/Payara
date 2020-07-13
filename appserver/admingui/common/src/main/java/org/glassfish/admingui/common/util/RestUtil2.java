@@ -38,6 +38,8 @@
  * holder.
  */
 
+
+
 /*
  * To change this template, choose Tools | Templates
  * and open the template in the editor.
@@ -135,10 +137,11 @@ public class RestUtil2 {
                 .post(Entity.entity(attrs, MediaType.APPLICATION_JSON_TYPE), Response.class);
 
         if (!isSuccess(resp.getStatus())) {
-            GuiUtil.getLogger().log(
-                    Level.SEVERE,
-                    GuiUtil.getCommonMessage("LOG_UPDATE_ENTITY_FAILED", new Object[]{endpoint, attrs}));
-            GuiUtil.handleError(handlerCtx, GuiUtil.getMessage("msg.error.checkLog"));
+            GuiUtil.getLogger().log(Level.SEVERE,
+                    GuiUtil.getCommonMessage("LOG_UPDATE_ENTITY_FAILED", new Object[]{endpoint, attrs}) + '\n'
+                    + resp.getEntity());
+            final String originalMessage = GuiUtil.tryToFindOriginalErrorMessage(resp.getEntity());
+            GuiUtil.handleError(handlerCtx, GuiUtil.getMessage("msg.error.checkLog") + '\n' + originalMessage);
             return;
         }
 
