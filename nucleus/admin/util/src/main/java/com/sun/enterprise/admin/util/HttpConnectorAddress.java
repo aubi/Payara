@@ -203,12 +203,14 @@ public final class HttpConnectorAddress {
 
                         case TLS13:
                             
-                           if (!JDK.isTls13Supported()) {
-                               if (JDK.isOpenJSSEFlagRequired()) {
-                                protocol = TLS13;
-                            } else {
+                            if (!JDK.isTls13Supported()) {
+                                if (JDK.isOpenJSSEFlagRequired()) {
+                                    protocol = TLS13;
+                                } else {
 
-                                protocol = DEFAULT_PROTOCOL;
+
+                                    protocol = DEFAULT_PROTOCOL;
+                                }
                             }
                             
                             logger.log(Level.FINE,
