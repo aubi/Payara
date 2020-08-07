@@ -38,7 +38,7 @@
  * holder.
  */
 
-// Portions Copyright [2019] Payara Foundation and/or affiliates
+// Portions Copyright [2019-2020] Payara Foundation and/or affiliates
 
 /*
  * UtilHandlers.java
@@ -1165,20 +1165,11 @@ public class UtilHandlers {
         return builder.toString();
     }
     
-    @Handler(id = "py.getJavaVendor",
+    @Handler(id = "py.isTls13Supported",
             output = {
-                @HandlerOutput(name = "javaVendor", type=String.class)}
-    )
-    public static void getJavaVendor(HandlerContext handlerCtx) {
-       handlerCtx.setOutputValue("javaVendor", JDK.getVendor());
-    }
-    
-    @Handler(id = "py.getJdkUpdateVersion",
-            output = {
-                @HandlerOutput(name = "jdkUpdateVersion", type = String.class)}
-    )
-    public static void getJdkUpdateVersion(HandlerContext handlerCtx) {
-        handlerCtx.setOutputValue("jdkUpdateVersion", JDK.getUpdate());
+                @HandlerOutput(name = "result", type = Boolean.class)})
+    public static void isTls13Supported(HandlerContext handlerCtx) {
+        handlerCtx.setOutputValue("result", JDK.isTls13Supported() || JDK.isOpenJSSEFlagRequired());
     }
 
     private static final String PATH_SEPARATOR = "${path.separator}";
