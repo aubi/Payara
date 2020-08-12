@@ -38,7 +38,7 @@
  * holder.
  */
 
-// Portions Copyright [2016-2019] [Payara Foundation and/or its affiliates]
+// Portions Copyright [2016-2020] [Payara Foundation and/or its affiliates]
 
 package com.sun.enterprise.admin.util;
 
@@ -68,8 +68,6 @@ public final class HttpConnectorAddress {
     public static final String  AUTHORIZATION_KEY     = "Authorization";
     private static final String AUTHORIZATION_TYPE = "Basic ";
     private static final String DEFAULT_PROTOCOL = TLS12;
-    private static final String ZULU_JDK_VENDOR = "Azul";
-    private static final int MINIMUM_UPDATE_VERSION = 222;
 
     private String host;
     private int    port;
@@ -205,11 +203,14 @@ public final class HttpConnectorAddress {
 
                         case TLS13:
                             
-                            if (!JDK.getVendor().contains(ZULU_JDK_VENDOR) && JDK.getUpdate() >= MINIMUM_UPDATE_VERSION) {
-                                protocol = TLS13;
-                            } else {
+                            if (!JDK.isTls13Supported()) {
+                                if (JDK.isOpenJSSEFlagRequired()) {
+                                    protocol = TLS13;
+                                } else {
 
-                                protocol = DEFAULT_PROTOCOL;
+
+                                    protocol = DEFAULT_PROTOCOL;
+                                }
                             }
                             
                             logger.log(Level.FINE,

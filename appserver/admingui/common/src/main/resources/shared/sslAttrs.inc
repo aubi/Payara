@@ -39,7 +39,7 @@
     holder.
 
 -->
-<!-- Portions Copyright [2018-2019] Payara Foundation and/or affiliates -->
+<!-- Portions Copyright [2018-2020] Payara Foundation and/or affiliates -->
 
 <!-- sslAttrs.inc -->
 
@@ -61,20 +61,8 @@
                 OtherCiphersList="#{requestScope.availableOther}"
                 EccCiphersList="#{requestScope.availableEcc}")
 
-        py.getJavaVendor(javaVendor="#{requestScope.javaVendor}");
-        setPageSessionAttribute(key="isVendorAzul", value="#{requestScope.javaVendor.contains('Azul')}");
-
-        setPageSessionAttribute(key="showTLS13Prop", value="#{false}");
-
-        if (#{pageSession.isVendorAzul}){
-            py.getJdkUpdateVersion(jdkUpdateVersion="#{requestScope.jdkUpdateVersion}");
-
-            if (#{requestScope.jdkUpdateVersion}>$int{221}){
-                setPageSessionAttribute(key="showTLS13Prop", value="#{true}");
-            }
-
-        }
-        
+        py.isTls13Supported(result="#{requestScope.isTls13Supported}");
+        setPageSessionAttribute(key="showTLS13Prop", value="#{requestScope.isTls13Supported}");
     />
      <!afterCreate
         getClientId(component="$this{component}" clientId=>$page{sheetId});

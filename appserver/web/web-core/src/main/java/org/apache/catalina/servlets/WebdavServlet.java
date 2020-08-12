@@ -55,7 +55,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-// Portions Copyright [2017] [Payara Foundation and/or its affiliates]
+// Portions Copyright [2017-2020] [Payara Foundation and/or its affiliates]
 package org.apache.catalina.servlets;
 
 import java.io.IOException;
@@ -175,7 +175,7 @@ public class WebdavServlet
 
 
     /**
-     * Default depth is infite.
+     * Default depth is infinite.
      */
     private static final int INFINITY = 3; // To limit tree browsing a bit
 
@@ -255,7 +255,7 @@ public class WebdavServlet
         try {
             md5Helper = MessageDigest.getInstance("MD5");
         } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException("No MD5");
+            throw new IllegalStateException("No MD5 digest found.");
         }
     }
 
@@ -1165,9 +1165,7 @@ public class WebdavServlet
                 // Checking if a child resource of this collection is
                 // already locked
                 Vector<String> lockPaths = new Vector<String>();
-                locksList = collectionLocks.elements();
-                while (locksList.hasMoreElements()) {
-                    LockInfo currentLock = locksList.nextElement();
+                for (LockInfo currentLock : collectionLocks) {
                     if (currentLock.hasExpired()) {
                         resourceLocks.remove(currentLock.path);
                         continue;
@@ -1246,10 +1244,7 @@ public class WebdavServlet
                 boolean addLock = true;
 
                 // Checking if there is already a shared lock on this path
-                locksList = collectionLocks.elements();
-                while (locksList.hasMoreElements()) {
-
-                    LockInfo currentLock = locksList.nextElement();
+                for (LockInfo currentLock : collectionLocks) {
                     if (currentLock.path.equals(lock.path)) {
 
                         if (currentLock.isExclusive()) {
@@ -1530,45 +1525,39 @@ public class WebdavServlet
 
         // Checking resource locks
 
-        LockInfo lock = resourceLocks.get(path);
-        Enumeration<String> tokenList = null;
-        if (lock != null && lock.hasExpired()) {
-            resourceLocks.remove(path);
-        } else if (lock != null) {
-
-            // At least one of the tokens of the locks must have been given
-
-            tokenList = lock.tokens.elements();
-            boolean tokenMatch = false;
-            while (tokenList.hasMoreElements()) {
-                String token = tokenList.nextElement();
-                if (ifHeader.indexOf(token) != -1)
-                    tokenMatch = true;
+        LockInfo resourceLock = resourceLocks.get(path);
+        if (resourceLock != null) {
+            if (resourceLock.hasExpired()) {
+                resourceLocks.remove(path);
+            } else {
+                // At least one of the tokens of the locks must have been given
+                boolean tokenMatch = false;
+                for (String token : resourceLock.tokens) {
+                    if (ifHeader.contains(token)) {
+                        tokenMatch = true;
+                    }
+                }
+                if (!tokenMatch) {
+                    return true;
+                }
             }
-            if (!tokenMatch)
-                return true;
-
         }
 
         // Checking inheritable collection locks
-
-        Enumeration<LockInfo> collectionLocksList = collectionLocks.elements();
-        while (collectionLocksList.hasMoreElements()) {
-            lock = collectionLocksList.nextElement();
-            if (lock.hasExpired()) {
-                collectionLocks.removeElement(lock);
-            } else if (path.startsWith(lock.path)) {
-
-                tokenList = lock.tokens.elements();
+       
+        for (LockInfo collectionLock : collectionLocks) {
+            if (collectionLock.hasExpired()) {
+                collectionLocks.remove(collectionLock);
+            } else if (path.startsWith(collectionLock.path)) {
                 boolean tokenMatch = false;
-                while (tokenList.hasMoreElements()) {
-                    String token = tokenList.nextElement();
-                    if (ifHeader.indexOf(token) != -1)
+                for (String token : resourceLock.tokens) {
+                    if (ifHeader.contains(token)) {
                         tokenMatch = true;
+                    }
                 }
-                if (!tokenMatch)
+                if (!tokenMatch) {
                     return true;
-
+                }
             }
         }
 

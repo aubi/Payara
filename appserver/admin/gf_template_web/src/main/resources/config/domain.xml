@@ -243,7 +243,7 @@
         <jvm-options>-Dorg.jboss.weld.serialization.beanIdentifierIndexOptimization=false</jvm-options>
         <jvm-options>-Dorg.glassfish.grizzly.DEFAULT_MEMORY_MANAGER=org.glassfish.grizzly.memory.HeapMemoryManager</jvm-options>
         <jvm-options>-Dorg.glassfish.grizzly.nio.DefaultSelectorHandler.force-selector-spin-detection=true</jvm-options>
-        <jvm-options>[Azul-1.8.0u222|1.8.0u500]-XX:+UseOpenJSSE</jvm-options>
+        <jvm-options>[Azul-1.8.0u222|1.8.0u260]-XX:+UseOpenJSSE</jvm-options>
       </java-config>
       <network-config>
         <protocols>
@@ -436,7 +436,7 @@
              <!-- PAYARA-1033 Maintain backwards compatibility to old Grizzly Memeory Manager -->
              <jvm-options>-Dorg.glassfish.grizzly.DEFAULT_MEMORY_MANAGER=org.glassfish.grizzly.memory.HeapMemoryManager</jvm-options>
              <jvm-options>-Dorg.glassfish.grizzly.nio.DefaultSelectorHandler.force-selector-spin-detection=true</jvm-options>
-             <jvm-options>[Azul-1.8.0u222|1.8.0u500]-XX:+UseOpenJSSE</jvm-options>
+             <jvm-options>[Azul-1.8.0u222|1.8.0u260]-XX:+UseOpenJSSE</jvm-options>
         </java-config>
          <availability-service>
              <web-container-availability/>
