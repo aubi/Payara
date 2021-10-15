@@ -58,6 +58,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.security.*;
@@ -66,6 +67,7 @@ import java.util.List;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import org.junit.Before;
 
 /**
  *
@@ -80,7 +82,7 @@ public class ClientValidationTest {
     private static String certPath;
 
     private static final String CERTIFICATE_ALIAS = "omnikey";
-    private static final String LOCALHOST_URL = "https://localhost:8181/security/secure/hello";
+    private static String securedPageUrl; // "https://localhost:8181/security/secure/hello";
 
     @Deployment
     public static WebArchive deploy() {
@@ -96,6 +98,12 @@ public class ClientValidationTest {
                 .addAsWebInfResource(new File("src/main/webapp", "WEB-INF/beans.xml"));
     }
 
+    @Before
+    public void init() throws UnknownHostException {
+        //securedPageUrl = "https://" + NetUtils.getCanonicalHostName() + ":8181/security/secure/hello";
+        securedPageUrl = "https://localhost:8181/security/secure/hello";
+    }
+
     @Test
     @InSequence(1)
     public void generateCertsInTrustStore() throws IOException {
@@ -109,13 +117,13 @@ public class ClientValidationTest {
     public void validationFailTest() throws Exception {
         KeyManagerFactory kmf = KeyManagerFactory.getInstance(KeyManagerFactory.getDefaultAlgorithm());
         SSLSocketFactory sslSocketFactory = getSslSocketFactory(certPath, kmf, CERTIFICATE_ALIAS);
-        assertEquals(401, callEndpoint(sslSocketFactory));
+        assertEquals("Connecting to " + securedPageUrl, 401, callEndpoint(sslSocketFactory));
         assertTrue(checkForAPIValidationFailure());
 
     }
 
     private static int callEndpoint(SSLSocketFactory sslSocketFactory) throws IOException {
-        URL url = new URL(LOCALHOST_URL);
+        URL url = new URL(securedPageUrl);
         HttpsURLConnection connection = (HttpsURLConnection) url.openConnection();
         connection.setSSLSocketFactory(sslSocketFactory);
         return connection.getResponseCode();
