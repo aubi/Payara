@@ -72,6 +72,7 @@ public class RWLockDataStructure implements DataStructure {
     private final ReentrantReadWriteLock reentrantLock = new ReentrantReadWriteLock();
     private final ReentrantReadWriteLock.ReadLock readLock = reentrantLock.readLock();
     private final ReentrantReadWriteLock.WriteLock writeLock = reentrantLock.writeLock();
+    private final Object addResourceLock = new Object();
 
     protected static final Logger _logger = LogDomains.getLogger(RWLockDataStructure.class,LogDomains.RSR_LOGGER);
 
@@ -92,12 +93,15 @@ public class RWLockDataStructure implements DataStructure {
         int numResAdded = 0;
         for (int i = 0; i < count && isNotFull(); i++) {
             try {
-                final ResourceHandle handle = handler.createResource(allocator);
-                boolean added = addResourceInternal(handle);
-                if (added) {
-                    numResAdded++;
-                } else {
-                    handler.deleteResource(handle);
+                // only one thread can add resources, but doesn't block other operations
+                synchronized (addResourceLock) {
+                    final ResourceHandle handle = handler.createResource(allocator);
+                    boolean added = addResourceInternal(handle);
+                    if (added) {
+                        numResAdded++;
+                    } else {
+                        handler.deleteResource(handle);
+                    }
                 }
             } catch (Exception e) {
                 throw new PoolingException(e.getMessage(), e);
