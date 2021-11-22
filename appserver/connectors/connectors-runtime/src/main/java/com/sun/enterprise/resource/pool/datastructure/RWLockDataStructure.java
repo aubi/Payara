@@ -77,8 +77,9 @@ public class RWLockDataStructure implements DataStructure {
     protected static final Logger _logger = LogDomains.getLogger(RWLockDataStructure.class,LogDomains.RSR_LOGGER);
 
     public RWLockDataStructure(int maxSize, ResourceHandler handler) {
-        allResources = new ArrayList<>(Math.min(maxSize, 1000));
-        freeResources = new ArrayDeque<>(Math.min(maxSize, 1000));
+        int effectiveMaxSize = Math.min(maxSize, 1000);
+        allResources = new ArrayList<>(effectiveMaxSize);
+        freeResources = new ArrayDeque<>(effectiveMaxSize);
         this.maxSize = maxSize;
         this.handler = handler;
         if(_logger.isLoggable(Level.FINEST)) {
@@ -95,12 +96,10 @@ public class RWLockDataStructure implements DataStructure {
             try {
                 // only one thread can add resources, but doesn't block other operations
                 synchronized (addResourceLock) {
-                    final ResourceHandle handle = handler.createResource(allocator);
-                    boolean added = addResourceInternal(handle);
-                    if (added) {
+                    if (allResources.size() < maxSize) {
+                        final ResourceHandle handle = handler.createResource(allocator);
+                        boolean added = addResourceInternal(handle);
                         numResAdded++;
-                    } else {
-                        handler.deleteResource(handle);
                     }
                 }
             } catch (Exception e) {
