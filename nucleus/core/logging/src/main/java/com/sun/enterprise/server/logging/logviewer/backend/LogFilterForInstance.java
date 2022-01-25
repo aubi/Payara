@@ -37,11 +37,15 @@
  * only if the new code is made subject to such option by the copyright
  * holder.
  *
- * Portions Copyright [2017-2021] Payara Foundation and/or affiliates
+ * Portions Copyright [2017-2022] Payara Foundation and/or affiliates
  */
 
 package com.sun.enterprise.server.logging.logviewer.backend;
 
+import com.sun.enterprise.admin.remote.RemoteRestAdminCommand;
+import com.sun.enterprise.admin.report.ActionReporter;
+import com.sun.enterprise.admin.util.InstanceRestCommandExecutor;
+import com.sun.enterprise.admin.util.InstanceStateService;
 import com.sun.enterprise.config.serverbeans.Domain;
 import com.sun.enterprise.config.serverbeans.Node;
 import com.sun.enterprise.config.serverbeans.Nodes;
@@ -53,21 +57,37 @@ import com.trilead.ssh2.SCPClient;
 import com.trilead.ssh2.SFTPv3DirectoryEntry;
 import com.trilead.ssh2.SFTPv3FileAttributes;
 
-import fish.payara.enterprise.server.logging.TrivialTarInputStream;
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URL;
+import java.net.URLConnection;
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLSession;
+import org.glassfish.api.ActionReport;
+import org.glassfish.api.admin.CommandException;
+import org.glassfish.api.admin.FailurePolicy;
+import org.glassfish.api.admin.InstanceCommandResult;
+import org.glassfish.api.admin.ParameterMap;
 import org.glassfish.cluster.ssh.launcher.SSHLauncher;
 import org.glassfish.cluster.ssh.sftp.SFTPClient;
 import org.glassfish.cluster.ssh.util.DcomInfo;
@@ -188,50 +208,66 @@ public class LogFilterForInstance {
             }
 
         } else if (node.getType().equals("DOCKER") || node.getType().equals("TEMP")) {
+            String adminHost = targetServer.getAdminHost();
+            int adminPort = targetServer.getAdminPort();
+
+            // try asadmin command
+            ParameterMap parameters = new ParameterMap();
+            parameters.insert("target", instanceName);
+            ActionReport aReport = new ActionReporter() {
+                @Override
+                public void writeReport(OutputStream os) throws IOException {
+                    // no-op
+                }
+            };
+            InstanceCommandResult aResult = new InstanceCommandResult();
+            // "view-log" - asadmin doesn't exist, only rest
+            // "collect-log-files" - doesn't work remotely on docker instance, returns empty zip
+            String cmd = "collect-log-files";
+            try {
+                InstanceRestCommandExecutor ice
+                        = new InstanceRestCommandExecutor(habitat, cmd, FailurePolicy.Error, FailurePolicy.Error,
+                                targetServer, adminHost, adminPort, logger, parameters, aReport, aResult);
+                InstanceStateService instanceState = habitat.getService(InstanceStateService.class);
+                Future<InstanceCommandResult> f = instanceState.submitJob(targetServer, ice, aResult);
+                long maxWaitTime = RemoteRestAdminCommand.getReadTimeout();
+                InstanceCommandResult result = f.get(maxWaitTime, TimeUnit.MILLISECONDS);
+                logger.fine(result.toString());
+            } catch (CommandException | InterruptedException | ExecutionException | TimeoutException ex) {
+                Logger.getLogger(LogFilterForInstance.class.getName()).log(Level.SEVERE, null, ex);
+            }
             String dockerContainerId = targetServer.getDockerContainerId();
             String nodeHost = node.getNodeHost();
             int nodeDockerPort = Integer.valueOf(node.getDockerPort());
+
             try {
-                if (dockerContainerId == null && node.getType().equals("TEMP")) {
-                    // FIXME: it would be easies, if the TEMP server had docker container id set!
-                    // temporary docker node, we need to access the original node, cut the added generated name
-                    String originalInstanceName = instanceName.substring(0, instanceName.lastIndexOf('-'));
-                    Server originalInstance = domain.getServerNamed(originalInstanceName);
-                    dockerContainerId = originalInstance.getDockerContainerId();
-                    String originalNodeName = originalInstance.getNodeRef();
-                    Node originalNode = nodes.getNode(originalNodeName);
-                    nodeHost = originalNode.getNodeHost();
-                    nodeDockerPort = Integer.valueOf(originalNode.getDockerPort());
-                    logFileName = "server.log";
-                }
+                // try payara rest api, view-log
                 File logFileDirectoryOnServer = makingDirectory(domainRoot + File.separator + "logs"
                         + File.separator + instanceName);
-
-                String loggingDir = getLoggingDirectoryForNode(instanceLogFileName, node, sNode, instanceName);
 
                 if (logFileName == null || logFileName.equals("")) {
                     logFileName = "server.log";
                 }
-                //"/opt/payara/appserver/glassfish/nodes/Hilarious-Angelfish/docker-instance-LovelyChar/logs/server.log"
-                String remotePath = loggingDir + "/" + logFileName;
-
-                String prefix = "http" + (Boolean.valueOf(node.getUseTls()) ? "s" : "");
+                String prefix = "https"; // remote access always uses secure connection
 
                 // store the log file to the given path
-                URL logUrl = new URL(prefix, nodeHost, nodeDockerPort, "/containers/"
-                        + dockerContainerId
-                        + "/archive?path="
-                        + remotePath);
-                BufferedInputStream downloadFile = new BufferedInputStream(logUrl.openStream());
-//                ArchiveInputStream tarStream = new ArchiveStreamFactory().createArchiveInputStream(downloadFile);
-                TrivialTarInputStream tarStream = new TrivialTarInputStream(downloadFile);
+                URL logUrl = new URL(prefix, adminHost, adminPort, "/management/domain/view-log?instanceName=" + URLEncoder.encode(instanceName, "utf-8"));
+                URLConnection logConnection = logUrl.openConnection();
+                String auth = "admin:admin";
+                byte[] encodedAuth = Base64.getEncoder().encode(auth.getBytes(StandardCharsets.UTF_8));
+                String authHeaderValue = "Basic " + new String(encodedAuth);
+                logConnection.setRequestProperty("Authorization", authHeaderValue);
+                if (logConnection instanceof HttpsURLConnection) {
+                    // ignore the https certificate doesn't match the hostname -- it's virtualized inside docker
+                    HttpsURLConnection logHttpsConnection = (HttpsURLConnection) logConnection;
+                    logHttpsConnection.setHostnameVerifier((String urlHostName, SSLSession session) -> true);
+                }
+                logConnection.connect();
+                BufferedInputStream downloadFile = new BufferedInputStream(logConnection.getInputStream());
                 Path instanceLogPath = Paths.get(logFileDirectoryOnServer.getAbsolutePath(), logFileName);
-                //Path instanceLogPathTar = Paths.get(logFileDirectoryOnServer.getAbsolutePath() + ".tar", logFileName);
-                Files.copy(tarStream, instanceLogPath, StandardCopyOption.REPLACE_EXISTING);
-//                Files.copy(downloadFile, instanceLogPath, StandardCopyOption.REPLACE_EXISTING);
+                Files.copy(downloadFile, instanceLogPath, StandardCopyOption.REPLACE_EXISTING);
                 instanceLogFile = instanceLogPath.toFile();
             } catch (IOException ex) {
-//            } catch (IOException | ArchiveException ex) {
                 throw new IOException("Unable to download file from docker node at " + nodeHost + ":" + nodeDockerPort + ", instance " + instanceName + ", container " + dockerContainerId, ex);
             }
 
