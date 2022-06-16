@@ -105,7 +105,6 @@
         <dependency>
             <groupId>org.glassfish.woodstock</groupId>
             <artifactId>woodstock-webui-jsf</artifactId>
-            <version>${woodstock-jsf.version}</version>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jsftemplating</groupId>

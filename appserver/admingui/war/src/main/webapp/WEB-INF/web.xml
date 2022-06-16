@@ -79,7 +79,15 @@
         <param-name>jakarta.faces.SEPARATOR_CHAR</param-name>
         <param-value>:</param-value>
     </context-param>
-
+    <context-param>
+        <param-name>jakarta.faces.FACELETS_SUFFIX</param-name>
+        <param-value>.jsf</param-value>
+    </context-param>
+    <context-param>
+        <param-name>jakarta.faces.FACELETS_LIBRARIES</param-name>
+        <param-value>/WEB-INF/webuijsf.taglib.xml</param-value>
+    </context-param>
+    
     <filter>
         <filter-name>UploadFilter</filter-name>
         <filter-class>com.sun.webui.jsf.util.UploadFilter</filter-class>
