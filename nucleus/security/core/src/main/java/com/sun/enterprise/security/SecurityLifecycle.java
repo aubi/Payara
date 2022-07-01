@@ -45,6 +45,7 @@ import static com.sun.enterprise.security.SecurityLoggerInfo.secServiceStartupEx
 import static java.util.logging.Level.INFO;
 import static java.util.logging.Level.SEVERE;
 
+import java.security.Policy;
 import java.util.logging.Logger;
 
 import jakarta.inject.Inject;
@@ -64,7 +65,6 @@ import com.sun.enterprise.security.audit.AuditManager;
 import com.sun.enterprise.security.auth.realm.RealmsManager;
 import com.sun.enterprise.security.common.Util;
 import com.sun.enterprise.security.ssl.SSLUtils;
-import org.glassfish.exousia.modules.locked.AuthorizationRoleMapper;
 
 /**
  * This class extends default implementation of ServerLifecycle interface.
@@ -148,6 +148,9 @@ public class SecurityLifecycle implements  PostConstruct, PreDestroy {
             if (System.getProperty("simple.jacc.provider.JACCRoleMapper.class") == null) {
                 System.setProperty("simple.jacc.provider.JACCRoleMapper.class",
                         "com.sun.enterprise.security.web.integration.GlassfishRoleMapper");
+                _logger.log(SEVERE,"*** Calling Policy.getPolicy()", new Exception("Where is it called from?"));
+                Policy policy = Policy.getPolicy();
+                _logger.severe("*** DONE");
             }
 
             policyLoader.loadPolicy();
