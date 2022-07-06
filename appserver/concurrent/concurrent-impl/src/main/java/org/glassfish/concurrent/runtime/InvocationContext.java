@@ -78,18 +78,21 @@ public class InvocationContext implements ContextHandle {
     private transient Map spanContextMap;
     private boolean useTransactionOfExecutionThread;
 
+    private ComponentInvocation previousInvocation;
+
     private List<ThreadContextSnapshot> threadContextSnapshots;
     private List<ThreadContextRestorer> threadContextRestorers;
 
     public InvocationContext(ComponentInvocation invocation, ClassLoader contextClassLoader, SecurityContext securityContext,
             boolean useTransactionOfExecutionThread, List<ThreadContextSnapshot> threadContextSnapshots,
-            List<ThreadContextRestorer> threadContextRestorers) {
+            List<ThreadContextRestorer> threadContextRestorers, ComponentInvocation previousInvocation) {
         this.invocation = invocation;
         this.contextClassLoader = contextClassLoader;
         this.securityContext = securityContext;
         this.useTransactionOfExecutionThread = useTransactionOfExecutionThread;
         this.threadContextSnapshots = threadContextSnapshots;
         this.threadContextRestorers = threadContextRestorers;
+        this.previousInvocation = previousInvocation;
         saveTracingContext();
     }
 
@@ -259,6 +262,14 @@ public class InvocationContext implements ContextHandle {
                 appName
         );
         return newInv;
+    }
+
+    public ComponentInvocation getPreviousInvocation() {
+        return previousInvocation;
+    }
+
+    public void setPreviousInvocation(ComponentInvocation previousInvocation) {
+        this.previousInvocation = previousInvocation;
     }
 
 }

@@ -246,7 +246,7 @@ public class ContextSetupProviderImpl implements ContextSetupProvider {
                 .forEach(snapshot -> threadContextSnapshots.add(snapshot));
 
         return new InvocationContext(savedInvocation, contextClassloader, currentSecurityContext, useTransactionOfExecutionThread,
-                threadContextSnapshots, Collections.EMPTY_LIST);
+                threadContextSnapshots, Collections.EMPTY_LIST, null);
     }
 
     @Override
@@ -255,6 +255,8 @@ public class ContextSetupProviderImpl implements ContextSetupProvider {
             logger.log(Level.SEVERE, LogFacade.UNKNOWN_CONTEXT_HANDLE);
             return null;
         }
+        ComponentInvocation previousInvocation = invocationManager.getCurrentInvocation();
+
         InvocationContext handle = (InvocationContext) contextHandle;
         String appName = null;
 
@@ -327,7 +329,7 @@ public class ContextSetupProviderImpl implements ContextSetupProvider {
         }
 
         return new InvocationContext(invocation, resetClassLoader, resetSecurityContext, handle.isUseTransactionOfExecutionThread(),
-                Collections.EMPTY_LIST, restorers);
+                Collections.EMPTY_LIST, restorers, previousInvocation);
     }
 
     private void startConcurrentContextSpan(ComponentInvocation invocation, InvocationContext handle) {
@@ -390,6 +392,10 @@ public class ContextSetupProviderImpl implements ContextSetupProvider {
         }
         if (handle.getInvocation() != null) {
             invocationManager.postInvoke(((InvocationContext) contextHandle).getInvocation());
+        }
+        if(handle.getPreviousInvocation() != invocationManager.getCurrentInvocation()) {
+            // ERROR!!!
+            throw new IllegalStateException("Wrong invocation after context run, not equal to remembered!\nrememberedInovation: "+handle.getPreviousInvocation()+"\ncurrentInvocation: "+invocationManager.getCurrentInvocation());
         }
         if (contextClear.contains(CONTEXT_TYPE_WORKAREA) && transactionManager != null) {
             // clean up after user if a transaction is still active
