@@ -305,6 +305,7 @@ public class ContextSetupProviderImpl implements ContextSetupProvider {
         if (invocation != null) {
             // Each invocation needs a ResourceTableKey that returns a unique hashCode for TransactionManager
             invocation.setResourceTableKey(new PairKey(invocation.getInstance(), Thread.currentThread()));
+            logger.severe("*****! Saving context in thread "+Thread.currentThread().getName()+": "+invocation);
             invocationManager.preInvoke(invocation);
         }
         // Ensure that there is no existing transaction in the current thread
@@ -391,6 +392,7 @@ public class ContextSetupProviderImpl implements ContextSetupProvider {
             SecurityContext.setCurrent(handle.getSecurityContext());
         }
         if (handle.getInvocation() != null) {
+            logger.severe("*****! Resetting context in thread "+Thread.currentThread().getName()+": "+handle.getInvocation());
             invocationManager.postInvoke(((InvocationContext) contextHandle).getInvocation());
         }
         if(handle.getPreviousInvocation() != invocationManager.getCurrentInvocation()) {
