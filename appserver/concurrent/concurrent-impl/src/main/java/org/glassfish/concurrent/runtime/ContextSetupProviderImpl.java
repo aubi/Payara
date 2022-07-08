@@ -219,15 +219,14 @@ public class ContextSetupProviderImpl implements ContextSetupProvider {
         verifyProviders(contextClear);
         verifyProviders(contextUnchanged);
 
-        ComponentInvocation currentInvocation = invocationManager.getCurrentInvocation();
-        if (currentInvocation != null) {
-            if (contextPropagate.contains(CONTEXT_TYPE_NAMING)) {
-                savedInvocation = createComponentInvocation(currentInvocation);
-            }
-            if (contextClear.contains(CONTEXT_TYPE_NAMING)) {
-                savedInvocation = new ComponentInvocation();
-            }
+        if (contextPropagate.contains(CONTEXT_TYPE_NAMING)) {
+            ComponentInvocation currentInvocation = invocationManager.getCurrentInvocation();
+            savedInvocation = createComponentInvocation(currentInvocation);
         }
+        if (contextClear.contains(CONTEXT_TYPE_NAMING)) {
+            savedInvocation = new ComponentInvocation();
+        }
+
         boolean useTransactionOfExecutionThread = (transactionManager == null && useTransactionOfExecutionThread(contextObjectProperties))
                 || contextUnchanged.contains(CONTEXT_TYPE_WORKAREA);
 
@@ -304,6 +303,16 @@ public class ContextSetupProviderImpl implements ContextSetupProvider {
             // Each invocation needs a ResourceTableKey that returns a unique hashCode for TransactionManager
             invocation.setResourceTableKey(new PairKey(invocation.getInstance(), Thread.currentThread()));
             invocationManager.preInvoke(invocation);
+        } else {
+            ComponentInvocation currentInvocation = invocationManager.getCurrentInvocation();
+            if(currentInvocation!=null) {
+                // this is suspicious
+                if(Thread.currentThread().getName().contains("ForkJoinPool")) {
+                    // this one shouldn't have any invocation!!!
+                    ComponentInvocation i2 = invocationManager.getCurrentInvocation();
+                    logger.severe(i2.toString());
+                }
+            }
         }
         // Ensure that there is no existing transaction in the current thread
         if (transactionManager != null && contextClear.contains(CONTEXT_TYPE_WORKAREA)) {
@@ -388,7 +397,7 @@ public class ContextSetupProviderImpl implements ContextSetupProvider {
         if (handle.getSecurityContext() != null) {
             SecurityContext.setCurrent(handle.getSecurityContext());
         }
-        if (handle.getInvocation() != null && !handle.isUseTransactionOfExecutionThread()) {
+        if (handle.getInvocation() != null/* && !handle.isUseTransactionOfExecutionThread()*/) {
             invocationManager.postInvoke(((InvocationContext) contextHandle).getInvocation());
         }
         if (contextClear.contains(CONTEXT_TYPE_WORKAREA) && transactionManager != null) {

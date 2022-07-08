@@ -42,7 +42,6 @@ package org.glassfish.api.invocation;
 
 import static java.lang.ThreadLocal.withInitial;
 import static java.util.Collections.emptyList;
-import static java.util.logging.Level.WARNING;
 import static org.glassfish.api.invocation.ComponentInvocation.ComponentInvocationType.EJB_INVOCATION;
 import static org.glassfish.api.invocation.ComponentInvocation.ComponentInvocationType.SERVICE_STARTUP;
 import static org.glassfish.api.invocation.ComponentInvocation.ComponentInvocationType.SERVLET_INVOCATION;
@@ -158,6 +157,8 @@ public class InvocationManagerImpl implements InvocationManager {
             // Push this invocation on the stack
             frames.addLast(invocation);
             LOGGER.finest(() -> "Added invocation "+frames.size()+" on the stack:\n" + invocation);
+            LOGGER.log(Level.SEVERE, "IIIII Added   ^"+frames.size()+", thread "+Thread.currentThread().getName()+", type: "+type+", invocation: " + invocation, new Exception());
+            LOGGER.severe(() -> "IIIII     Previous: "+prev);
 
             if (allTypesHandler != null) {
                 allTypesHandler.afterPreInvoke(type, prev, invocation);
@@ -184,7 +185,7 @@ public class InvocationManagerImpl implements InvocationManager {
 
         ComponentInvocation current = iter.next(); // the last is the current is "invocation"
         if (isInconsistentUse(invocation, current)) {
-            LOGGER.log(WARNING, "postInvoke not called with top of the invocation stack. Expected:\n{0}\nbut was:\n{1}",
+            LOGGER.log(Level.SEVERE, "postInvoke not called with top of the invocation stack. Expected:\n{0}\nbut was:\n{1}",
                     new Object[] { current, invocation });
             LOGGER.log(Level.FINE, "Stacktrace: ",
                     new IllegalStateException("This exception is not thrown, it is only to trace the invocation"));
@@ -204,6 +205,9 @@ public class InvocationManagerImpl implements InvocationManager {
             // pop the stack
             ComponentInvocation removed = frames.removeLast();
             LOGGER.finest(() -> "Removed\n"+removed+ "\nafter postInvoke of\n"+invocation);
+            LOGGER.log(Level.SEVERE, "IIIII Removed v"+frames.size()+", thread "+Thread.currentThread().getName()+", type: "+type+", invocation: " + invocation, new Exception());
+            LOGGER.severe(() -> "IIIII     Removed  "+removed);
+            LOGGER.severe(() -> "IIIII     Previous "+prev);
 
             if (allTypesHandler != null) {
                 allTypesHandler.afterPostInvoke(type, prev, current);
