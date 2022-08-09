@@ -726,7 +726,14 @@ admingui.nav = {
     clearTreeSelection: function(treeId) {
         var tree = document.getElementById(treeId);
         if (tree) {
-            tree.clearAllHighlight(treeId);
+            // this is called at init, when the module may not loaded
+            if(tree.clearAllHighlight !== null) {
+                // try it a bit later again
+                var module = this;
+                setTimeout(() => {module.clearTreeSelection(treeId);}, 100);
+            } else {
+                tree.clearAllHighlight(treeId);
+            }
         }
     },
 
