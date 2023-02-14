@@ -18,7 +18,7 @@ pipeline {
       }
       steps {
         withMaven(jdk: 'zulu-11', publisherStrategy: 'EXPLICIT') {
-          withSonarQubeEnv(installationName: 'Payara-Testone', credentialsId: 'paubrecht-sonar') {
+          withSonarQubeEnv(installationName: 'Payara-Testone', credentialsId: 'petr-sonar') {
             sh "mvn clean install -DskipTests -PQuickBuild sonar:sonar -Dsonar.projectKey=paubrecht -Dsonar.projectName=paubrecht"
           }
         }
@@ -30,7 +30,7 @@ pipeline {
       }
       steps {
         timeout(time: 1, unit: 'HOURS') {
-          waitForQualityGate abortPipeline: true, credentialsId: 'paubrecht-sonar'
+          waitForQualityGate abortPipeline: true, credentialsId: 'petr-sonar'
         }
       }
     }
