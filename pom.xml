@@ -138,7 +138,7 @@
         <maven.source.plugin.version>3.2.1</maven.source.plugin.version>
         <maven.javadoc.plugin.version>3.4.1</maven.javadoc.plugin.version>
         <maven.install.plugin.version>3.1.0</maven.install.plugin.version>
-        <maven.bundle.plugin.version>4.1.0</maven.bundle.plugin.version>
+        <maven.bundle.plugin.version>5.1.8</maven.bundle.plugin.version>
         <maven.failsafe.plugin.version>3.0.0-M7</maven.failsafe.plugin.version>
         <maven.site.plugin.version>3.12.1</maven.site.plugin.version>
         <dynamic.build.properties.version>0.0.1.a2</dynamic.build.properties.version>
@@ -163,8 +163,8 @@
         <mail.version>2.1.0</mail.version>
         <angus.mail.version>1.0.0</angus.mail.version>
         <jakarta.annotation-api.version>2.1.1</jakarta.annotation-api.version>
-        <hk2.version>3.0.1.payara-p3</hk2.version>
-        <osgi-resource-locator.version>1.0.3</osgi-resource-locator.version>
+        <hk2.version>3.0.4</hk2.version>
+        <osgi-resource-locator.version>2.5.0-b42</osgi-resource-locator.version>
         <stax-api.version>1.0-2</stax-api.version>
         <jackson.version>2.15.0</jackson.version>
         <snakeyaml.version>2.0</snakeyaml.version>
@@ -184,7 +184,7 @@
         <yasson.version>3.0.2</yasson.version>
         <jakarta-persistence-api.version>3.1.0</jakarta-persistence-api.version>
         <eclipselink.version>4.0.1.payara-p1</eclipselink.version>
-        <eclipselink.asm.version>9.4.0</eclipselink.asm.version>
+        <eclipselink.asm.version>9.5.0</eclipselink.asm.version>
         <jakarta.transaction-api.version>2.0.1</jakarta.transaction-api.version>
         <jakarta.interceptor-api.version>2.1.0</jakarta.interceptor-api.version>
         <jakarta.inject.version>2.0.0</jakarta.inject.version>
@@ -237,7 +237,7 @@
         <websocket-api.version>2.1.0</websocket-api.version>
         <concurrent-api.version>3.0.2</concurrent-api.version>
         <concurrent.version>3.0.2.payara-p1</concurrent.version>
-        <asm.version>9.4</asm.version>
+        <asm.version>9.5</asm.version>
         <monitoring-console-api.version>2.0.1</monitoring-console-api.version>
         <monitoring-console-process.version>2.0.1</monitoring-console-process.version>
         <monitoring-console-webapp.version>2.0.1</monitoring-console-webapp.version>
