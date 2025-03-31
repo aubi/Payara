@@ -153,8 +153,12 @@ final class InstallerThread extends Thread {
                 webe.setSniffer("web");
                 Engine sece = singleModule.createChild(Engine.class);
                 sece.setSniffer("security");
+                // add also CDI container for Faces
+                Engine mojarraSniffer = singleModule.createChild(Engine.class);
+                mojarraSniffer.setSniffer("cdi");
                 singleModule.getEngines().add(webe);
                 singleModule.getEngines().add(sece);
+                singleModule.getEngines().add(mojarraSniffer);
                 Server s = (Server) proxies[1];
                 List<ApplicationRef> arefs = s.getApplicationRef();
                 ApplicationRef aref = s.createChild(ApplicationRef.class);

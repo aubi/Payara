@@ -62,8 +62,8 @@ import jakarta.inject.Singleton;
 import org.glassfish.web.loader.LogFacade;
 
 /**
- * Implementation of TldProvider for JSF.
- * 
+ * Implementation of TldProvider for Faces.
+ * * 
  * @author Shing Wai Chan
  * @author Sahoo
  */

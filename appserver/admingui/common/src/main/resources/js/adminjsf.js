@@ -42,6 +42,13 @@
  * Common utility
  */
 
+require(['webui/suntheme/field']);
+require(['webui/suntheme/dropDown']);
+require(['webui/suntheme/upload']);
+require(['webui/suntheme/jumpDropDown']);
+require(['webui/suntheme/hyperlink']);
+require(['webui/suntheme/props']);
+
 /* To work around a timing issue where for Firefox 2.0.0.3 on Mac OS X
  * We need to put in a little delay before returning the var
  */
@@ -590,7 +597,7 @@ admingui.nav = {
     requestTreeUpdate: function(source, event, nodeId, params, previousState) {
         // Ping header to make sure header stays "fresh"
         admingui.ajax.pingHeader();
-        jsf.ajax.request(source, event, {
+        faces.ajax.request(source, event, {
             execute: "treeForm treeForm:update",
             render: nodeId + " " + nodeId + "_children",
             onevent: function(data) {
@@ -1102,7 +1109,7 @@ admingui.help = {
 
         // launch the request
         // Note: in help window, don't ping -- only 1 JSF page
-        jsf.ajax.request(tabElement, null, props);
+        faces.ajax.request(tabElement, null, props);
 
         //
         // Use DOM to show/hide the proper tree
@@ -2335,7 +2342,7 @@ admingui.ajax = {
         }
         // Ping header to make sure header stays "fresh"
         admingui.ajax.pingHeader();
-        jsf.ajax.request(component, null, params);
+        faces.ajax.request(component, null, params);
     },
 
     defaultGetCallback: function(xmlReq, target, url) {
@@ -2413,7 +2420,7 @@ admingui.ajax = {
                             result = node.textContent;
                         }
                         if (node.getAttribute('id') === 'jakarta.faces.ViewState') {
-                            // NOTE: see jsf.ajax.doUpdate for more info....
+                            // NOTE: see faces.ajax.doUpdate for more info....
                             viewState = node.firstChild;
                         }
                     }
@@ -2623,7 +2630,7 @@ admingui.ajax = {
         if (typeof(async) === 'undefined') {
             async = true;
         }
-        if (!(typeof(jsf) === 'undefined') && !(typeof(jsf.ajax) === 'undefined')) {
+        if (!(typeof(faces) === 'undefined') && !(typeof(faces.ajax) === 'undefined')) {
             // Warp user's function to make easier to use
             var func = function(data) {
                 if (data.status === 'success') {
@@ -2648,7 +2655,7 @@ admingui.ajax = {
                 }
             } else {
                 // Don't ping b/c this is from the header and therefor is a ping
-                jsf.ajax.request(src, null,
+                faces.ajax.request(src, null,
                 {
                     execute: 'execButton',
                     render: 'execResp',
@@ -2688,7 +2695,7 @@ admingui.ajax = {
                 execute: '@none',
                 render: '@none'
             };
-            jsf.ajax.request(src, null, options);
+            faces.ajax.request(src, null, options);
         }
     }
 }

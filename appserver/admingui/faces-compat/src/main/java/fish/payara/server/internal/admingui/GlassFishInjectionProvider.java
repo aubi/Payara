@@ -420,8 +420,6 @@ public class GlassFishInjectionProvider extends DiscoverableInjectionProvider im
             ie.initCause(cause);
             throw ie;
         }
-
-        return;
     }
 
     private BundleDescriptor getBundle() {
